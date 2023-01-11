@@ -23,6 +23,7 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             }
             var fechasistema = "";
             fechasistema = persona[0].per_fechaModificacion;
+            var listafecha=persona[0].per_fechaModificacion.toString().split(".")[0]
             let fechaactual = new Date();
             let resta = fechaactual.getTime() - fechasistema.getTime();
             var resultadoresta = Math.round(resta / (1000 * 60 * 60 * 24));

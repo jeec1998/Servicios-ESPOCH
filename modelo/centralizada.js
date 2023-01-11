@@ -27,7 +27,7 @@ module.exports.obtenerpersonapersonalizado = function (cedula, callback) {
 module.exports.obtenerdocumento = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "SELECT d.pid_valor, p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCasa\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", etn_id, p.eci_id, gen_id,  p.lugarprocedencia_id,p.sex_id, p.per_procedencia, p.per_conyuge, p.per_idconyuge FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id WHERE d.pid_valor= '" + cedula + "'  "
+    sentencia = "SELECT d.pid_valor, p.* FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id WHERE d.pid_valor= '" + cedula + "'  "
     client.connect()
     client.query(sentencia)
         .then(response => {

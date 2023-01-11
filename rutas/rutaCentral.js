@@ -244,6 +244,41 @@ router.get('/listagenero/', async (req, res) => {
     }
 });
 
+router.get('/listapais/', async (req, res) => {
+    try {
+        var pais = await new Promise(resolve => { centralizada.obtenerregistrosportabla('pais', (err, valor) => { resolve(valor); }) });
+        if (pais.length > 0) {
+            return res.json({
+                success: true,
+                listado: pais
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/listaprovinciadadopais/:idpais', async (req, res) => {
+    const idpais = req.params.idpais;
+    try {
+        var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('provincia','pai_id',idpais, (err, valor) => { resolve(valor); }) });
+        if (provincia.length > 0) {
+            return res.json({
+                success: true,
+                listado: provincia
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
 router.get('/objpersonalizado/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     try {
@@ -253,7 +288,7 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
             if (personapersonalizada.length > 0) {
                 return res.json({
                     success: true,
-                    listado: personapersonalizada[0]
+                    listado: personapersonalizada
                 });
             }
             else {

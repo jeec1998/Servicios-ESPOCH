@@ -16,7 +16,6 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
         var tipo = 1;
         var persona = await new Promise(resolve => { centralizada.obtenerdocumento(cedula, (err, valor) => { resolve(valor); }) });
         if (persona.length > 0) {
-            console.log('Persona registrada: ' + persona)
             var numerodias = 0;
             var Resultado = await new Promise(resolve => { centralizada.obtenerdiasdeconfiguracion((err, valor) => { resolve(valor); }) });
             if (Resultado != null) {
@@ -27,14 +26,13 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             let fechaactual = new Date();
             let resta = fechaactual.getTime() - fechasistema.getTime();
             var resultadoresta = Math.round(resta / (1000 * 60 * 60 * 24));
-            console.log('Fecha centralizada: ' + fechasistema)
-            console.log('Diferencias de dias en las fechas: ' + resultadoresta)
             if ((resultadoresta > numerodias) && (numerodias != 0)) {
                 var listadinardap = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
-                listado.push(persona);
+                listado.push(persona[0]);
+                console.log('Datos de la persona actualizados en la centralizada')
             }
             else {
-                listado.push(persona);
+                listado.push(persona[0]);
                 console.log('Persona devuelta de la centralizada')
             }
             return res.json({
@@ -43,11 +41,29 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             });
         }
         else {
-            console.log('Persona no registrada: ' + persona)
-            tipo = 2;
-            var registrar = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
-            //console.log(listadinardap)
-            console.log('Registrar en la centralizada')
+            if (cedula.length == 10) {
+                tipo = 2;
+                var registrar = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
+                if(registrar!=null)
+                {
+                    return res.json({
+                        success: true,
+                        listado: registrar[0]
+                    });
+                }
+                else{
+                    return res.json({
+                        success: false,
+                        mensaje: 'No se ha encontrado información en la Dinardap'
+                    });
+                }
+            }
+            else {
+                return res.json({
+                    success: true,
+                    mensaje: 'Cédula incorrecta'
+                });
+            }
         }
     } catch (err) {
         console.log('Error: ' + err)
@@ -142,214 +158,222 @@ async function consumirserviciodinardap(tipo, cedula, res, persona, callback) {
             if (!err) {
                 client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
                 client.getFichaGeneral(args, async function (err, result) {
-                    var jsonString = JSON.stringify(result.return);
-                    var objjson = JSON.parse(jsonString);
-                    let listacamposdinardap = objjson.instituciones[0].datosPrincipales.registros;
-                    for (campos of listacamposdinardap) {
-                        listado.push(campos);
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
                     }
-                    if (listado.length > 0) {
-                        if (tipo == 1) {
-                            ////consume la dinardap y actualiza los campos establecidos en la base
-                            let listacamposactualizar = [];
-                            var campos = await new Promise(resolve => { centralizada.listacamposactualizar((err, valor) => { resolve(valor); }) });
-                            if (campos.length > 0) {
-                                for (camposbase of campos) {
-                                    listacamposactualizar.push(camposbase);
-                                }
-                                var datosconyuge = "";
-                                var blnconyuge = false;
-                                for (campoactualizar of listacamposactualizar) {
-                                    for (atr of listado) {
-                                        if (campoactualizar.ca_nombredinardap == atr.campo) {
-                                            let nombrecampo = atr.campo;
-                                            if ((nombrecampo.includes("conyuge")) || (nombrecampo.includes("Conyuge"))) {
-                                                datosconyuge = datosconyuge + atr.valor + " ";
-                                                blnconyuge = true;
+                    else {
+                        var jsonString = JSON.stringify(result.return);
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposdinardap = objjson.instituciones[0].datosPrincipales.registros;
+                        for (campos of listacamposdinardap) {
+                            listado.push(campos);
+                        }
+                        if (listado.length > 0) {
+                            if (tipo == 1) {
+                                ////consume la dinardap y actualiza los campos establecidos en la base
+                                let listacamposactualizar = [];
+                                var campos = await new Promise(resolve => { centralizada.listacamposactualizar((err, valor) => { resolve(valor); }) });
+                                if (campos.length > 0) {
+                                    for (camposbase of campos) {
+                                        listacamposactualizar.push(camposbase);
+                                    }
+                                    var datosconyuge = "";
+                                    var blnconyuge = false;
+                                    for (campoactualizar of listacamposactualizar) {
+                                        for (atr of listado) {
+                                            if (campoactualizar.ca_nombredinardap == atr.campo) {
+                                                let nombrecampo = atr.campo;
+                                                if ((nombrecampo.includes("conyuge")) || (nombrecampo.includes("Conyuge"))) {
+                                                    datosconyuge = datosconyuge + atr.valor + " ";
+                                                    blnconyuge = true;
+                                                }
+                                                else {
+                                                    var personaactualizada = await new Promise(resolve => { actualizarcamposportipo(campoactualizar.ca_tipo, campoactualizar.ca_nombrecentralizada, campoactualizar.ca_tablacentralizada, atr.valor, persona[0], (err, valor) => { resolve(valor); }) });
+                                                };
                                             }
-                                            else {
-                                                var personaactualizada = await new Promise(resolve => { actualizarcamposportipo(campoactualizar.ca_tipo, campoactualizar.ca_nombrecentralizada, campoactualizar.ca_tablacentralizada, atr.valor, persona[0], (err, valor) => { resolve(valor); }) });
-                                            };
                                         }
                                     }
+                                    if (blnconyuge) {
+                                        ////pendiente enviar a modificar conyuge
+                                        //console.log('Datos conyuge: ' + datosconyuge)
+                                    }
                                 }
-                                if (blnconyuge) {
-                                    ////pendiente enviar a modificar conyuge
-                                    //console.log('Datos conyuge: ' + datosconyuge)
+                                else {
+                                    //console.log('No existen registros para actualizar')
                                 }
                             }
                             else {
-                                console.log('No existen registros para actualizar')
+                                ////consume la dinardap y crea el objeto en la centralizada
+                                console.log('Persona no registrada en la centralizada')
+                                let personacentralizada = {};
+                                var cedulanueva = "";
+                                var nombrescompletos = "";
+                                var primerApellido = "";
+                                var segundoApellido = "";
+                                var fechaNacimiento = "";
+                                var idestadocivil = 1;
+                                var idsexo = 1;
+                                var idgenero = 1;
+                                var idprovincia = 1;
+                                var idciudad = 1;
+                                var idparroquia = 1;
+                                var procedenciapersona = "";
+                                var lugarprocedencia = "";
+                                var conyuge = "";
+                                var idconyuge = "";
+                                var calleprincipal = "";
+                                var numerocasa = "";
+                                var idnacionalidad = "1";
+                                var blnvisatrabajo = "false";
+                                for (atr of listado) {
+                                    if (atr.campo == "cedula") {
+                                        cedulanueva = atr.valor;
+                                    }
+                                    if (atr.campo == "nombre") {
+                                        const nombres = atr.valor.split(" ");
+                                        if (nombres.length > 0) {
+                                            nombrescompletos = "";
+                                            primerApellido = nombres[0];
+                                            segundoApellido = nombres[1];
+                                            for (var i = 2; i < nombres.length; i++) {
+                                                nombrescompletos = nombrescompletos + nombres[i] + " ";
+                                            }
+                                        }
+                                    }
+                                    if (atr.campo == "fechaNacimiento") {
+                                        fechaNacimiento = atr.valor;
+                                    }
+                                    if (atr.campo == "estadoCivil") {
+                                        var estadocivil = await new Promise(resolve => { centralizada.obtenerestadocivildadonombre(atr.valor, (err, valor) => { resolve(valor); }) });
+                                        if (estadocivil.length > 0) {
+                                            idestadocivil = estadocivil[0].eci_id;
+                                        }
+                                    }
+                                    if (atr.campo == "sexo") {
+                                        var sexo = await new Promise(resolve => { centralizada.obtenersexodadonombre(atr.valor, (err, valor) => { resolve(valor); }) });
+                                        if (sexo.length > 0) {
+                                            idsexo = sexo[0].sex_id;
+                                        }
+                                        if (atr.valor.includes('HOMBRE')) {
+                                            idgenero = 1;
+                                        }
+                                        else {
+                                            if (atr.valor.includes('MUJER')) {
+                                                idgenero = 2;
+                                            }
+                                            else {
+                                                idgenero = 3;
+                                            }
+                                        }
+                                    }
+                                    if (atr.campo == "callesDomicilio") {
+                                        calleprincipal = atr.valor;
+                                    }
+                                    if (atr.campo == "numeroCasa") {
+                                        numerocasa = atr.valor;
+                                    }
+                                    if (atr.campo == "lugarNacimiento") {
+                                        const lugarNacimiento = atr.valor.split("/");
+                                        if (lugarNacimiento.length > 0) {
+                                            var provincia = lugarNacimiento[0];
+                                            var ciudad = lugarNacimiento[1];
+                                            var parroquia = lugarNacimiento[2];
+                                            var objprovincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('provincia', 'pro_nombre', provincia, (err, valor) => { resolve(valor); }) });
+                                            if (objprovincia.length > 0) {
+                                                idprovincia = objprovincia[0].pro_id;
+                                            }
+                                            var objciudad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('ciudad', 'ciu_nombre', ciudad, (err, valor) => { resolve(valor); }) });
+                                            if (objciudad.length > 0) {
+                                                idciudad = objciudad[0].ciu_id;
+                                            }
+                                            var objparroquia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('parroquia', 'prq_nombre', parroquia, (err, valor) => { resolve(valor); }) });
+                                            if (objparroquia.length > 0) {
+                                                idparroquia = objparroquia[0].prq_id;
+                                            }
+                                            var procedenciapersona = idprovincia + '/' + idciudad + '/' + idparroquia;
+                                            var lugarprocedencia = idparroquia;
+                                        }
+                                    }
+                                    if (atr.campo == "conyuge") {
+                                        conyuge = atr.valor;
+                                    }
+                                    if (atr.campo == "cedulaConyuge") {
+                                        idconyuge = atr.valor;
+                                    }
+                                    if (atr.campo == "nacionalidad") {
+                                        var nacionalidad = atr.valor;
+                                        var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('nacionalidad', 'nac_nombre', nacionalidad, (err, valor) => { resolve(valor); }) });
+                                        if (objnacionalidad.length > 0) {
+                                            idnacionalidad = objnacionalidad[0].nac_id;
+                                            blnvisatrabajo = objnacionalidad[0].nac_requiereVisaTrabajo;
+                                        }
+                                    }
+                                    personacentralizada = {
+                                        per_nombres: nombrescompletos,
+                                        per_primerapellido: primerApellido,
+                                        per_segundoapellido: segundoApellido,
+                                        per_fechanacimiento: fechaNacimiento,
+                                        tsa_id: 1,
+                                        etn_id: 8,
+                                        eci_id: idestadocivil,
+                                        gen_id: idgenero,
+                                        per_creadopor: 0,
+                                        per_fechacreacion: formatDate(new Date()),
+                                        per_modificadopor: 0,
+                                        per_fechamodificacion: formatDate(new Date()),
+                                        lugarprocedencia_id: lugarprocedencia,
+                                        sex_id: idsexo,
+                                        per_procedencia: procedenciapersona,
+                                        per_conyuge: conyuge,
+                                        per_idconyuge: idconyuge,
+                                        per_cedula: cedulanueva,
+                                        dir_calleprincipal: calleprincipal,
+                                        dir_numcasa: numerocasa,
+                                        per_nacionalidad: idnacionalidad,
+                                        nac_reqvisa: blnvisatrabajo
+                                    }
+
+                                }
+                                //console.log(personacentralizada)
+                                var ingresopersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personacentralizada, (err, valor) => { resolve(valor); }) });
+                                if (ingresopersona) {
+                                    var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personacentralizada.per_nombres, personacentralizada.per_primerapellido, personacentralizada.per_segundoapellido, personacentralizada.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
+                                    if (persona.length > 0) {
+                                        listadevuelta.push(persona[0])
+                                        var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonal(cedulanueva, persona[0].per_id, (err, valor) => { resolve(valor); }) });
+                                        if (documentopersonalreg) {
+                                            ////pendiente registrar en la tabla domicilio y nacionalidad
+                                            var ingresodireccion = await new Promise(resolve => { centralizada.ingresoDireccionPersona(persona[0].per_id, personacentralizada.dir_calleprincipal, personacentralizada.dir_numcasa, idparroquia, (err, valor) => { resolve(valor); }) });
+                                            if (ingresodireccion) {
+                                                var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, personacentralizada.nac_reqvisa, personacentralizada.per_nacionalidad, (err, valor) => { resolve(valor); }) });
+                                                if (ingresoNacionalidad) {
+                                                    console.log('Registro ingresado correctamente')
+                                                    callback(null,persona);
+                                                }
+                                            }
+                                        }
+                                    }                                
+                                }
+                                else {
+                                    console.log('Error al registrar persona')
+                                    callback(null);
+                                }
                             }
                         }
                         else {
-                            ////consume la dinardap y crea el objeto en la centralizada
-                            console.log('Persona no registrada en la centralizada')
-                            let personacentralizada = {};
-                            var cedulanueva = "";
-                            var nombrescompletos = "";
-                            var primerApellido = "";
-                            var segundoApellido = "";
-                            var fechaNacimiento = "";
-                            var idestadocivil = 1;
-                            var idsexo = 1;
-                            var idgenero = 1;
-                            var idprovincia = 1;
-                            var idciudad = 1;
-                            var idparroquia = 1;
-                            var procedenciapersona = "";
-                            var lugarprocedencia = "";
-                            var conyuge = "";
-                            var idconyuge = "";
-                            var calleprincipal = "";
-                            var numerocasa = "";
-                            var idnacionalidad = "1";
-                            var blnvisatrabajo = "false";
-                            for (atr of listado) {
-                                if (atr.campo == "cedula") {
-                                    cedulanueva = atr.valor;
-                                }
-                                if (atr.campo == "nombre") {
-                                    const nombres = atr.valor.split(" ");
-                                    if (nombres.length > 0) {
-                                        nombrescompletos = "";
-                                        primerApellido = nombres[0];
-                                        segundoApellido = nombres[1];
-                                        for (var i = 2; i < nombres.length; i++) {
-                                            nombrescompletos = nombrescompletos + nombres[i] + " ";
-                                        }
-                                    }
-                                }
-                                if (atr.campo == "fechaNacimiento") {
-                                    fechaNacimiento = atr.valor;
-                                }
-                                if (atr.campo == "estadoCivil") {
-                                    var estadocivil = await new Promise(resolve => { centralizada.obtenerestadocivildadonombre(atr.valor, (err, valor) => { resolve(valor); }) });
-                                    if (estadocivil.length > 0) {
-                                        idestadocivil = estadocivil[0].eci_id;
-                                    }
-                                }
-                                if (atr.campo == "sexo") {
-                                    var sexo = await new Promise(resolve => { centralizada.obtenersexodadonombre(atr.valor, (err, valor) => { resolve(valor); }) });
-                                    if (sexo.length > 0) {
-                                        idsexo = sexo[0].sex_id;
-                                    }
-                                    if (atr.valor.includes('HOMBRE')) {
-                                        idgenero = 1;
-                                    }
-                                    else {
-                                        if (atr.valor.includes('MUJER')) {
-                                            idgenero = 2;
-                                        }
-                                        else {
-                                            idgenero = 3;
-                                        }
-                                    }
-                                }
-                                if (atr.campo == "callesDomicilio") {
-                                    calleprincipal = atr.valor;
-                                }
-                                if (atr.campo == "numeroCasa") {
-                                    numerocasa = atr.valor;
-                                }
-                                if (atr.campo == "lugarNacimiento") {
-                                    const lugarNacimiento = atr.valor.split("/");
-                                    if (lugarNacimiento.length > 0) {
-                                        var provincia = lugarNacimiento[0];
-                                        var ciudad = lugarNacimiento[1];
-                                        var parroquia = lugarNacimiento[2];
-                                        var objprovincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('provincia', 'pro_nombre', provincia, (err, valor) => { resolve(valor); }) });
-                                        if (objprovincia.length > 0) {
-                                            idprovincia = objprovincia[0].pro_id;
-                                        }
-                                        var objciudad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('ciudad', 'ciu_nombre', ciudad, (err, valor) => { resolve(valor); }) });
-                                        if (objciudad.length > 0) {
-                                            idciudad = objciudad[0].ciu_id;
-                                        }
-                                        var objparroquia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('parroquia', 'prq_nombre', parroquia, (err, valor) => { resolve(valor); }) });
-                                        if (objparroquia.length > 0) {
-                                            idparroquia = objparroquia[0].prq_id;
-                                        }
-                                        var procedenciapersona = idprovincia + '/' + idciudad + '/' + idparroquia;
-                                        var lugarprocedencia = idparroquia;
-                                    }
-                                }
-                                if (atr.campo == "conyuge") {
-                                    conyuge = atr.valor;
-                                }
-                                if (atr.campo == "cedulaConyuge") {
-                                    idconyuge = atr.valor;
-                                }
-                                if (atr.campo == "nacionalidad") {
-                                    var nacionalidad = atr.valor;
-                                    var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('nacionalidad', 'nac_nombre', nacionalidad, (err, valor) => { resolve(valor); }) });
-                                    if (objnacionalidad.length > 0) {
-                                        idnacionalidad = objnacionalidad[0].nac_id;
-                                        blnvisatrabajo = objnacionalidad[0].nac_requiereVisaTrabajo;
-                                    }
-                                }
-                                personacentralizada = {
-                                    per_nombres: nombrescompletos,
-                                    per_primerapellido: primerApellido,
-                                    per_segundoapellido: segundoApellido,
-                                    per_fechanacimiento: fechaNacimiento,
-                                    tsa_id: 1,
-                                    etn_id: 8,
-                                    eci_id: idestadocivil,
-                                    gen_id: idgenero,
-                                    per_creadopor: 0,
-                                    per_fechacreacion: formatDate(new Date()),
-                                    per_modificadopor: 0,
-                                    per_fechamodificacion: formatDate(new Date()),
-                                    lugarprocedencia_id: lugarprocedencia,
-                                    sex_id: idsexo,
-                                    per_procedencia: procedenciapersona,
-                                    per_conyuge: conyuge,
-                                    per_idconyuge: idconyuge,
-                                    per_cedula: cedulanueva,
-                                    dir_calleprincipal: calleprincipal,
-                                    dir_numcasa: numerocasa,
-                                    per_nacionalidad: idnacionalidad,
-                                    nac_reqvisa: blnvisatrabajo
-                                }
-
-                            }
-                            //console.log(personacentralizada)
-                            var ingresopersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personacentralizada, (err, valor) => { resolve(valor); }) });
-                            if (ingresopersona) {
-                                var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personacentralizada.per_nombres, personacentralizada.per_primerapellido, personacentralizada.per_segundoapellido, personacentralizada.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
-                                if (persona.length > 0) {
-                                    listadevuelta.push(persona[0])
-                                    console.log('Cédula a registrar: ' + personacentralizada.per_cedula)
-                                    var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonal(cedulanueva, persona[0].per_id, (err, valor) => { resolve(valor); }) });
-                                    if (documentopersonalreg) {
-                                        ////pendiente registrar en la tabla domicilio y nacionalidad
-                                        var ingresodireccion = await new Promise(resolve => { centralizada.ingresoDireccionPersona(persona[0].per_id, personacentralizada.dir_calleprincipal, personacentralizada.dir_numcasa, idparroquia, (err, valor) => { resolve(valor); }) });
-                                        if (ingresodireccion) {
-                                            var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, personacentralizada.nac_reqvisa, personacentralizada.per_nacionalidad, (err, valor) => { resolve(valor); }) });
-                                            if (ingresoNacionalidad) {
-                                                console.log('Registro ingresado correctamente')
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else {
-                                console.log('Error al registrar persona')
-                            }
+                            console.log('Error')
+                            callback(null);
                         }
-                    }
-                    else {
-                        console.log('Lista dinardap vacia')
                     }
                 });
             } else {
+                callback(null);
                 console.log('Error consumo dinardap: ' + err)
             }
-            listadevuelta.push(persona)
+
         }
         );
-        callback(null, listadevuelta);
     } catch (err) {
         console.error('Fallo en la Consulta', err.stack)
         return callback(null);

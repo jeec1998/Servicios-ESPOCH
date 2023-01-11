@@ -1,3 +1,9 @@
 ###consumo de dato personales
 ### numero de CI la persona
 GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
+
+###consumo de nacionalidades
+GET http://localhost:4000/rutaCentral/listanacionalidades
+
+###consumo de generos
+GET http://localhost:4000/rutaCentral/listagenero

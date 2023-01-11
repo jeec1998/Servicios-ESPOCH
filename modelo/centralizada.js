@@ -146,6 +146,24 @@ module.exports.obtenerdiasdeconfiguracion = function (callback) {
 
 }
 
+module.exports.obtenerregistrosportabla = function (nombretabla, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT * FROM central.\"" + nombretabla + "\""
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+
+
+}
+
 module.exports.listacamposactualizar = function (callback) {
     var client = new Client(db)
     var sentencia;

@@ -9,7 +9,7 @@ router.get('/diaactualizacion/', (req, res) => {
     try {
         obtenerdiasdeactualizacion(function (Resultado) {
             if (Resultado != 0) {
-                var diasactualizar=Resultado;
+                var diasactualizar = Resultado;
                 console.log('Resultado: ' + diasactualizar)
                 return res.json({
                     success: true,
@@ -29,8 +29,7 @@ async function obtenerdiasdeactualizacion(callback) {
         let listado = [];
         var numdias = await new Promise(resolve => { centralizada.obtenerdiasdeconfiguracion((err, valor) => { resolve(valor); }) });
         if (numdias.length > 0) {
-            listado.push(numdias[0].valor);
-            console.log('numerodias: ' + numdias[0].valor)
+            listado.push(numdias[0].valor);            
         }
         else {
             return callback("X");
@@ -211,4 +210,37 @@ router.get('/generarkey/:dependencia', (req, res) => {
     });*/
 });
 
+router.get('/listanacionalidades/', async (req, res) => {
+    try {
+        var nacionalidades = await new Promise(resolve => { centralizada.obtenerregistrosportabla('nacionalidad', (err, valor) => { resolve(valor); }) });
+        if (nacionalidades.length > 0) {
+            return res.json({
+                success: true,
+                listado: nacionalidades
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/listagenero/', async (req, res) => {
+    try {
+        var genero = await new Promise(resolve => { centralizada.obtenerregistrosportabla('genero', (err, valor) => { resolve(valor); }) });
+        if (genero.length > 0) {
+            return res.json({
+                success: true,
+                listado: genero
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
 module.exports = router;

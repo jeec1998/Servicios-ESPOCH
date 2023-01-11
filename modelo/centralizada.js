@@ -301,3 +301,54 @@ module.exports.ingresoNacionalidad = function (idpersona, tienevisa, idnacionali
             client.end()
         })
 }
+///////ACTUALIZAR PERSONA EN LA CENTRALIZADA
+const modificardatospersona = async (email, telefonocelular, telefonocasa, idlugarnacimiento, idgenero, idpersona, fechamodificacion, callback) => {
+    return new Promise((resolve, reject) => {
+        try {
+            var client = new Client(db)
+            var sentencia;
+            sentencia = "UPDATE central.persona SET \"per_emailAlternativo\"=" + email + ", \"per_telefonoCelular\"="+telefonocelular+", gen_id="+idgenero+", \"per_fechaModificacion\"="+fechamodificacion+", \"per_telefonoCasa\"="+telefonocasa+", lugarprocedencia_id="+idlugarnacimiento+" WHERE per_id="+idpersona+""
+            client.connect()
+            client.query(sentencia)
+                .then(response => {
+                    callback(null, true);
+                    resolve(recordSet.recordsets);
+                    client.end()
+                })
+                .catch(err => {
+                    reject(err);
+                    console.error('Fallo en la Consulta', err.stack);
+                    client.end()
+                })
+        }
+        catch (error) {
+            reject(error);
+        }
+
+    });
+}
+module.exports.ingresoarchivocarreras = async function (listamaterias, callback) {
+    try {
+        let dbConn = new sql.ConnectionPool(dbacademico);
+        await dbConn.connect();
+        let transaction = new sql.Transaction(dbConn);
+        await transaction.begin().then(async () => {
+            let result2 = await insertararchivodecupos(listamaterias, transaction);
+            let result1 = await Promise.all([result2]);
+            await transaction.commit();
+            dbConn.close();
+            callback(null, "OK");
+
+        }).catch(async (err) => {
+            await transaction.rollback();
+            dbConn.close();
+            console.log(err);
+            callback(null, err);
+            throw err;
+        });
+    }
+    catch (error) {
+        callback(null, "FALSE");
+        throw (error);
+    }
+}

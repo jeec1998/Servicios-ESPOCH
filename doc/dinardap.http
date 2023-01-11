@@ -18,4 +18,12 @@ GET http://localhost:4000/rutaCentral/listapais
 
 ###consumo de provincia
 ### numero de ID del país
-GET http://localhost:4000/rutaCentral/listaprovinciadadopais/1
+GET http://localhost:4000/rutaCentral/listaprovinciadadopais/6
+
+###consumo de ciudades
+### numero de ID de la provincia
+GET http://localhost:4000/rutaCentral/listaciudadesdadoidprovincia/6
+
+###consumo de parroquias
+### numero de ID de la ciudad
+GET http://localhost:4000/rutaCentral/listaparroquiasdadoidciudad/16

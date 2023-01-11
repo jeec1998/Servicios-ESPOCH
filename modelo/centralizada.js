@@ -5,11 +5,29 @@ var os = require('os');
 const { Console } = require('console');
 const { Client } = require('pg')
 
+module.exports.obtenerpersonapersonalizado = function (cedula, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", nac.nac_id, nac.nac_nombre, p.sex_id, p.per_procedencia, p.per_conyuge, p.per_idconyuge "
+    + "FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id "
+    +" WHERE d.pid_valor= '" + cedula + "'  "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            callback(null,'No existen registros en la base de datos');
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+}
+
 module.exports.obtenerdocumento = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
-    /////modificar para devolver datos completos
-    sentencia = "SELECT p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoOficina\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", \"per_afiliacionIESS\", tsa_id, etn_id,  p.eci_id, gen_id, p.\"per_creadoPor\", p.\"per_fechaCreacion\", p.\"per_modificadoPor\",   p.\"per_fechaModificacion\", p.\"per_telefonoCasa\", p.lugarprocedencia_id,p.sex_id, p.per_procedencia, p.per_conyuge, p.per_idconyuge FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id WHERE d.pid_valor= '" + cedula + "'  "
+    sentencia = "SELECT d.pid_valor, p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCasa\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", etn_id, p.eci_id, gen_id,  p.lugarprocedencia_id,p.sex_id, p.per_procedencia, p.per_conyuge, p.per_idconyuge FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id WHERE d.pid_valor= '" + cedula + "'  "
     client.connect()
     client.query(sentencia)
         .then(response => {

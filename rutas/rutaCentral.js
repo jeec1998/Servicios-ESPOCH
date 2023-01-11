@@ -29,7 +29,7 @@ async function obtenerdiasdeactualizacion(callback) {
         let listado = [];
         var numdias = await new Promise(resolve => { centralizada.obtenerdiasdeconfiguracion((err, valor) => { resolve(valor); }) });
         if (numdias.length > 0) {
-            listado.push(numdias[0].valor);            
+            listado.push(numdias[0].valor);
         }
         else {
             return callback("X");
@@ -234,6 +234,39 @@ router.get('/listagenero/', async (req, res) => {
             return res.json({
                 success: true,
                 listado: genero
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/objpersonalizado/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    try {
+        console.log(cedula)
+        var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedula, (err, valor) => { resolve(valor); }) });
+        if (personapersonalizada != null) {
+            if (personapersonalizada.length > 0) {
+                return res.json({
+                    success: true,
+                    listado: personapersonalizada[0]
+                });
+            }
+            else {
+                return res.json({
+                    success: false,
+                    mensaje: 'No existen registros en la base de datos'
+                });
+            }
+        }
+        else {
+            return res.json({
+                success: false,
+                mensaje: 'No existen registros en la base de datos'
             });
         }
     } catch (err) {

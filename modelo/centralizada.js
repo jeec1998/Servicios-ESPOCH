@@ -9,7 +9,7 @@ module.exports.obtenerdocumento = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
     /////modificar para devolver datos completos
-    sentencia = "SELECT p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoOficina\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", \"per_afiliacionIESS\", tsa_id, etn_id,  p.eci_id, gen_id, p.\"per_creadoPor\", p.\"per_fechaCreacion\", p.\"per_modificadoPor\",   p.\"per_fechaModificacion\", p.\"per_telefonoCasa\", p.lugarprocedencia_id,p.sex_id, p.per_procedencia FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id WHERE d.pid_valor= '" + cedula + "'  "
+    sentencia = "SELECT p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoOficina\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", \"per_afiliacionIESS\", tsa_id, etn_id,  p.eci_id, gen_id, p.\"per_creadoPor\", p.\"per_fechaCreacion\", p.\"per_modificadoPor\",   p.\"per_fechaModificacion\", p.\"per_telefonoCasa\", p.lugarprocedencia_id,p.sex_id, p.per_procedencia, p.per_conyuge, p.per_idconyuge FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id WHERE d.pid_valor= '" + cedula + "'  "
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -20,8 +20,23 @@ module.exports.obtenerdocumento = function (cedula, callback) {
             console.error('Fallo en la Consulta', err.stack);
             client.end()
         })
+}
 
-
+module.exports.obtenerpersonadadonombresapellidosyfechanacimiento = function (nombres, apellido1, apellido2, fechaNacimiento, callback) {
+    var client = new Client(db)
+    var sentencia;
+    /////modificar para devolver datos completos
+    sentencia = "SELECT * FROM central.persona p WHERE p.per_nombres= '" + nombres + "' and p.\"per_primerApellido\"= '" + apellido1 + "' and p.\"per_segundoApellido\"= '" + apellido2 + "' and p.\"per_fechaNacimiento\"= '" + fechaNacimiento + "' "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
 }
 
 module.exports.obtenerdocumentopormail = function (cedula, callback) {
@@ -77,6 +92,42 @@ module.exports.obtenerestadocivildadonombre = function (nombre, callback) {
 
 }
 
+module.exports.obtenersexodadonombre = function (nombre, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT * FROM central.\"sexo\" s WHERE s.sex_nombre like '%" + nombre + "%' "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+
+
+}
+
+module.exports.obtenerdatosdadonombredelatablayelcampo = function (nombretabla, nombrecampo, nombre, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT * FROM central." + nombretabla + " t WHERE t." + nombrecampo + " like '%" + nombre + "%' "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+
+
+}
+
 module.exports.obtenerdiasdeconfiguracion = function (callback) {
     var client = new Client(db)
     var sentencia;
@@ -117,7 +168,74 @@ module.exports.actualizarpersona = function (nombretabla, campocentralizada, val
     var client = new Client(db)
     var sentencia;
     sentencia = " UPDATE central." + nombretabla + " SET \"" + campocentralizada + "\"='" + valor + "' WHERE per_id=" + idpersona + "";
-    //console.log(sentencia)
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+}
+
+module.exports.ingresoPersonaCentralizada = function (objPersona, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "INSERT INTO central.persona (per_nombres, \"per_primerApellido\", \"per_segundoApellido\", \"per_fechaNacimiento\", tsa_id, etn_id, eci_id, gen_id, \"per_creadoPor\", \"per_fechaCreacion\", \"per_modificadoPor\", \"per_fechaModificacion\", lugarprocedencia_id,sex_id, per_procedencia, per_conyuge, per_idconyuge) "
+        + "VALUES('" + objPersona.per_nombres + "', '" + objPersona.per_primerapellido + "' , '" + objPersona.per_segundoapellido + "', '" + objPersona.per_fechanacimiento + "', " + objPersona.tsa_id + "," + objPersona.etn_id + "," + objPersona.eci_id + "," + objPersona.gen_id + "," + objPersona.per_creadopor + ",'" + objPersona.per_fechacreacion + "'," + objPersona.per_modificadopor + ",'" + objPersona.per_fechamodificacion + "'," + objPersona.lugarprocedencia_id + "," + objPersona.sex_id + ",'" + objPersona.per_procedencia + "','" + objPersona.per_conyuge + "','" + objPersona.per_idconyuge + "');";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+}
+
+module.exports.ingresoDocumentoPersonal = function (cedula, idpersona, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "INSERT INTO central.\"documentoPersonal\" (pid_valor, tdi_id, per_id, pid_activo) "
+        + "VALUES('" + cedula + "', '1' , '" + idpersona + "', 'true');";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+}
+
+module.exports.ingresoDireccionPersona = function (idpersona, calleprincipal, numcasa, idparroquia, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "INSERT INTO central.\"direccion\" (\"dir_callePrincipal\", dir_numero, dir_activa, prq_id, per_id) "
+        + "VALUES('" + calleprincipal + "', '" + numcasa + "', 'true' , '" + idparroquia + "', '" + idpersona + "');";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+}
+
+module.exports.ingresoNacionalidad = function (idpersona, tienevisa, idnacionalidad, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "INSERT INTO central.\"nacionalidadPersona\" (\"npe_esNacimiento\", \"npe_tieneVisaTrabajo\", per_id, nac_id, npe_default) "
+        + "VALUES('true', '" + tienevisa + "' , '" + idpersona + "','" + idnacionalidad + "', 'true');";
     client.connect()
     client.query(sentencia)
         .then(response => {

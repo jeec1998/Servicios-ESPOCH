@@ -16,11 +16,7 @@ var connection = new sql.ConnectionPool(config);
 connection.connect(function (err) {
     if (err) {
         console.error('Error en la Conexion de la Base de Datos', err.stack)
-    } else {
-       /* let fecha1 = new Date('2022/12/05');
-        let fecha2 = new Date()
-        let resta = fecha2.getTime() - fecha1.getTime()
-        console.log('Resultado resta de fechas: '+Math.round(resta / (1000 * 60 * 60 * 24)))*/
+    } else {        
         console.log('Conexion Base de Datos CENTRALIZADA')
     }
 });

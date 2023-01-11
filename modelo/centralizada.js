@@ -9,8 +9,8 @@ module.exports.obtenerpersonapersonalizado = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
     sentencia = "SELECT p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", nac.nac_id, nac.nac_nombre, p.sex_id, p.per_procedencia, p.per_conyuge, p.per_idconyuge "
-    + "FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id "
-    +" WHERE d.pid_valor= '" + cedula + "'  "
+        + "FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id "
+        + " WHERE d.pid_valor= '" + cedula + "'  "
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -18,7 +18,7 @@ module.exports.obtenerpersonapersonalizado = function (cedula, callback) {
             client.end()
         })
         .catch(err => {
-            callback(null,'No existen registros en la base de datos');
+            callback(null, 'No existen registros en la base de datos');
             console.error('Fallo en la Consulta', err.stack);
             client.end()
         })
@@ -132,6 +132,24 @@ module.exports.obtenerdatosdadonombredelatablayelcampo = function (nombretabla, 
     var client = new Client(db)
     var sentencia;
     sentencia = "SELECT * FROM central." + nombretabla + " t WHERE t." + nombrecampo + " like '%" + nombre + "%' "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+
+
+}
+
+module.exports.obtenerdatosdadonombredelatablayelcampoparainteger = function (nombretabla, nombrecampo, nombre, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT * FROM central." + nombretabla + " t WHERE t." + nombrecampo + "=" + nombre + ""
     client.connect()
     client.query(sentencia)
         .then(response => {

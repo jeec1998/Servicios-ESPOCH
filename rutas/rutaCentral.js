@@ -264,11 +264,47 @@ router.get('/listapais/', async (req, res) => {
 router.get('/listaprovinciadadopais/:idpais', async (req, res) => {
     const idpais = req.params.idpais;
     try {
-        var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('provincia','pai_id',idpais, (err, valor) => { resolve(valor); }) });
+        var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('provincia','pai_id',idpais, (err, valor) => { resolve(valor); }) });
         if (provincia.length > 0) {
             return res.json({
                 success: true,
                 listado: provincia
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/listaciudadesdadoidprovincia/:idprovincia', async (req, res) => {
+    const idprovincia = req.params.idprovincia;
+    try {
+        var ciudades = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('ciudad','pro_id',idprovincia, (err, valor) => { resolve(valor); }) });
+        if (ciudades.length > 0) {
+            return res.json({
+                success: true,
+                listado: ciudades
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/listaparroquiasdadoidciudad/:idciudad', async (req, res) => {
+    const idciudad = req.params.idciudad;
+    try {
+        var parroquias = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('parroquia','ciu_id',idciudad, (err, valor) => { resolve(valor); }) });
+        if (parroquias.length > 0) {
+            return res.json({
+                success: true,
+                listado: parroquias
             });
         }
     } catch (err) {

@@ -219,6 +219,12 @@ router.get('/listanacionalidades/', async (req, res) => {
                 listado: nacionalidades
             });
         }
+        else {
+            return res.json({
+                success: true,
+                listado: []
+            });
+        }
     } catch (err) {
         console.log('Error: ' + err)
         return res.json({
@@ -234,6 +240,35 @@ router.get('/listagenero/', async (req, res) => {
             return res.json({
                 success: true,
                 listado: genero
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                listado: []
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/listaetnias/', async (req, res) => {
+    try {
+        var etnias = await new Promise(resolve => { centralizada.obtenerregistrosportabla('etnia', (err, valor) => { resolve(valor); }) });
+        if (etnias.length > 0) {
+            return res.json({
+                success: true,
+                listado: etnias
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                listado: []
             });
         }
     } catch (err) {
@@ -253,6 +288,12 @@ router.get('/listapais/', async (req, res) => {
                 listado: pais
             });
         }
+        else {
+            return res.json({
+                success: true,
+                listado: []
+            });
+        }
     } catch (err) {
         console.log('Error: ' + err)
         return res.json({
@@ -264,11 +305,17 @@ router.get('/listapais/', async (req, res) => {
 router.get('/listaprovinciadadopais/:idpais', async (req, res) => {
     const idpais = req.params.idpais;
     try {
-        var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('provincia','pai_id',idpais, (err, valor) => { resolve(valor); }) });
+        var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('provincia', 'pai_id', idpais, (err, valor) => { resolve(valor); }) });
         if (provincia.length > 0) {
             return res.json({
                 success: true,
                 listado: provincia
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                listado: []
             });
         }
     } catch (err) {
@@ -279,14 +326,22 @@ router.get('/listaprovinciadadopais/:idpais', async (req, res) => {
     }
 });
 
+
 router.get('/listaciudadesdadoidprovincia/:idprovincia', async (req, res) => {
     const idprovincia = req.params.idprovincia;
     try {
-        var ciudades = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('ciudad','pro_id',idprovincia, (err, valor) => { resolve(valor); }) });
+        var ciudades = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('ciudad', 'pro_id', idprovincia, (err, valor) => { resolve(valor); }) });
+        console.log(ciudades)
         if (ciudades.length > 0) {
             return res.json({
                 success: true,
                 listado: ciudades
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                listado: []
             });
         }
     } catch (err) {
@@ -300,11 +355,17 @@ router.get('/listaciudadesdadoidprovincia/:idprovincia', async (req, res) => {
 router.get('/listaparroquiasdadoidciudad/:idciudad', async (req, res) => {
     const idciudad = req.params.idciudad;
     try {
-        var parroquias = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('parroquia','ciu_id',idciudad, (err, valor) => { resolve(valor); }) });
+        var parroquias = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('parroquia', 'ciu_id', idciudad, (err, valor) => { resolve(valor); }) });
         if (parroquias.length > 0) {
             return res.json({
                 success: true,
                 listado: parroquias
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                listado: []
             });
         }
     } catch (err) {
@@ -347,4 +408,110 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
         });
     }
 });
+
+router.post('/actualizarpersona', async (req, res) => {
+    var request = require('request');
+    var jsonDataObj = req.body;
+    var fecha= formatDate(new Date());
+    var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersona(jsonDataObj.per_emailAlternativo, jsonDataObj.per_telefonoCelular, jsonDataObj.per_telefonoCasa, jsonDataObj.lugarprocedencia_id, jsonDataObj.gen_id, jsonDataObj.per_id, fecha, jsonDataObj.etn_id, (err, valor) => { resolve(valor); }) });
+    if (actualizacionpersona) {
+        var actualizadireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(jsonDataObj.dir_callePrincipal, jsonDataObj.per_id, jsonDataObj.lugarprocedencia_id, (err, valor) => { resolve(valor); }) });
+        if (actualizadireccion) {
+            var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('nacionalidad', 'nac_id', jsonDataObj.nac_id, (err, valor) => { resolve(valor); }) });
+            if (objnacionalidad != null) {
+                if (objnacionalidad.length > 0) {
+                    var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(objnacionalidad[0], jsonDataObj.per_id, (err, valor) => { resolve(valor); }) });
+                    if (actualizanacionalidad) {
+                        console.log('persona actualizada con exito')
+                        return res.json({
+                            success: true,
+                            listado: jsonDataObj
+                        });
+                    }
+                    else {
+                        return res.json({
+                            success: true,
+                            listado: []
+                        });
+                    }
+                }
+                else {
+                    return res.json({
+                        success: true,
+                        listado: []
+                    });
+                }
+            }
+            else {
+                return res.json({
+                    success: true,
+                    listado: []
+                });
+            }
+        }
+        else {
+            return res.json({
+                success: true,
+                listado: []
+            });
+        }
+    }
+    else {
+        return res.json({
+            success: true,
+            listado: []
+        });
+    }
+});
+
+
+router.get('/verificarpersonanacionalidad/:idpersona/:idnacionalidad', async (req, res) => {
+    const idciudad = req.params.idciudad;
+    const idnacionalidad = req.params.idnacionalidad;
+    try {
+        var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('nacionalidad', 'nac_id', idnacionalidad, (err, valor) => { resolve(valor); }) });
+        if (objnacionalidad != null) {
+            if (objnacionalidad.length > 0) {
+                var nacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(objnacionalidad[0], 95464, (err, valor) => { resolve(valor); }) });
+                if (nacionalidad.length > 0) {
+                    return res.json({
+                        success: true,
+                        listado: nacionalidad
+                    });
+                }
+                else {
+                    return res.json({
+                        success: true,
+                        listado: []
+                    });
+                }
+            }
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+function padTo2Digits(num) {
+    return num.toString().padStart(2, '0');
+}
+
+function formatDate(date) {
+    return (
+        [
+            date.getFullYear(),
+            padTo2Digits(date.getMonth() + 1),
+            padTo2Digits(date.getDate()),
+        ].join('-') +
+        ' ' +
+        [
+            padTo2Digits(date.getHours()),
+            padTo2Digits(date.getMinutes()),
+            padTo2Digits(date.getSeconds()),
+        ].join(':')
+    );
+}
 module.exports = router;

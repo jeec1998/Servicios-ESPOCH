@@ -1,6 +1,6 @@
 const db = require('../config/databasecentral');
 //const { Client } = require('pg')
-const sql = require('pg')
+const sql = require('pg');
 var os = require('os');
 const { Console } = require('console');
 const { Client } = require('pg')
@@ -18,7 +18,7 @@ module.exports.obtenerpersonapersonalizado = function (cedula, callback) {
             client.end()
         })
         .catch(err => {
-            callback(null, 'No existen registros en la base de datos');
+            callback(null, false);
             console.error('Fallo en la Consulta', err.stack);
             client.end()
         })
@@ -36,6 +36,7 @@ module.exports.obtenerdocumento = function (cedula, callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 }
@@ -53,6 +54,7 @@ module.exports.obtenerpersonadadonombresapellidosyfechanacimiento = function (no
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 }
@@ -69,6 +71,7 @@ module.exports.obtenerdocumentopormail = function (cedula, callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -86,6 +89,7 @@ module.exports.obtenerdocumentoporperid = function (idpersona, callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -104,6 +108,7 @@ module.exports.obtenerestadocivildadonombre = function (nombre, callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -122,6 +127,7 @@ module.exports.obtenersexodadonombre = function (nombre, callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -140,6 +146,7 @@ module.exports.obtenerdatosdadonombredelatablayelcampo = function (nombretabla, 
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -158,6 +165,7 @@ module.exports.obtenerdatosdadonombredelatablayelcampoparainteger = function (no
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -176,6 +184,7 @@ module.exports.obtenerdiasdeconfiguracion = function (callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -194,6 +203,7 @@ module.exports.obtenerregistrosportabla = function (nombretabla, callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -212,6 +222,7 @@ module.exports.listacamposactualizar = function (callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 
@@ -230,6 +241,7 @@ module.exports.actualizarpersona = function (nombretabla, campocentralizada, val
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 }
@@ -247,6 +259,7 @@ module.exports.ingresoPersonaCentralizada = function (objPersona, callback) {
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 }
@@ -264,6 +277,7 @@ module.exports.ingresoDocumentoPersonal = function (cedula, idpersona, callback)
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 }
@@ -281,6 +295,7 @@ module.exports.ingresoDireccionPersona = function (idpersona, calleprincipal, nu
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 }
@@ -298,57 +313,151 @@ module.exports.ingresoNacionalidad = function (idpersona, tienevisa, idnacionali
         })
         .catch(err => {
             console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
             client.end()
         })
 }
-///////ACTUALIZAR PERSONA EN LA CENTRALIZADA
-const modificardatospersona = async (email, telefonocelular, telefonocasa, idlugarnacimiento, idgenero, idpersona, fechamodificacion, callback) => {
-    return new Promise((resolve, reject) => {
-        try {
-            var client = new Client(db)
-            var sentencia;
-            sentencia = "UPDATE central.persona SET \"per_emailAlternativo\"=" + email + ", \"per_telefonoCelular\"="+telefonocelular+", gen_id="+idgenero+", \"per_fechaModificacion\"="+fechamodificacion+", \"per_telefonoCasa\"="+telefonocasa+", lugarprocedencia_id="+idlugarnacimiento+" WHERE per_id="+idpersona+""
-            client.connect()
-            client.query(sentencia)
-                .then(response => {
-                    callback(null, true);
-                    resolve(recordSet.recordsets);
-                    client.end()
-                })
-                .catch(err => {
-                    reject(err);
-                    console.error('Fallo en la Consulta', err.stack);
-                    client.end()
-                })
-        }
-        catch (error) {
-            reject(error);
-        }
 
-    });
+/*
+module.exports.actualizarcuentacentral = function (usuario, pw, saltillo, callback) {
+    var client = new Client(db)
+    client.connect()
+    client.query(" UPDATE central.cuenta SET cta_password='" + pw + "', \"cta_CodigoSalt\"='" + saltillo + "' WHERE cta_login='" + usuario + "';")
+        .then(response => {
+            client.end()
+            callback(null, response.rowCount);
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+            callback(null, 0);
+        })
 }
-module.exports.ingresoarchivocarreras = async function (listamaterias, callback) {
-    try {
-        let dbConn = new sql.ConnectionPool(dbacademico);
-        await dbConn.connect();
-        let transaction = new sql.Transaction(dbConn);
-        await transaction.begin().then(async () => {
-            let result2 = await insertararchivodecupos(listamaterias, transaction);
-            let result1 = await Promise.all([result2]);
-            await transaction.commit();
-            dbConn.close();
-            callback(null, "OK");
+*/
 
-        }).catch(async (err) => {
-            await transaction.rollback();
-            dbConn.close();
-            console.log(err);
-            callback(null, err);
-            throw err;
-        });
+
+
+///////ACTUALIZAR PERSONA EN LA CENTRALIZADA
+module.exports.modificardatospersona = function (email, telefonocelular, telefonocasa, idlugarnacimiento, idgenero, idpersona, fechamodificacion, idetnia, callback) {
+    try {
+        var client = new Client(db)
+        var sentencia;
+        sentencia = "UPDATE central.persona SET \"per_emailAlternativo\"='" + email + "', \"per_telefonoCelular\"='" + telefonocelular + "', gen_id=" + idgenero + ", \"per_fechaModificacion\"='" + fechamodificacion + "', \"per_telefonoCasa\"='" + telefonocasa + "', lugarprocedencia_id=" + idlugarnacimiento + ",etn_id=" + idetnia + " WHERE per_id=" + idpersona + ""
+        client.connect()
+        client.query(sentencia)
+            .then(response => {
+                client.end()
+                callback(null, true);
+            })
+            .catch(err => {
+                console.error('Fallo en la Consulta modificar persona', err.stack);
+                client.end()
+                callback(null, false);
+            })
     }
     catch (error) {
-        callback(null, "FALSE");
-        throw (error);
+        reject(error);
+        callback(null, 0);
     }
 }
+
+///////ACTUALIZAR LA DIRECCION DE LA PERSONA EN LA CENTRALIZADA
+module.exports.modificardireccionpersona = function (calleprincipal, idpersona, idparroquia, callback) {
+    try {
+        var client = new Client(db)
+        var sentencia;
+        sentencia = "SELECT * FROM central.\"direccion\" WHERE per_id=" + idpersona + ""
+        client.connect()
+        client.query(sentencia)
+            .then(response => {
+                if (response.rowCount > 0) {
+                    sentencia = "UPDATE central.direccion SET \"dir_callePrincipal\"='" + calleprincipal + "', \"prq_id\"=" + idparroquia + " WHERE per_id=" + idpersona + ""
+                    client.query(sentencia)
+                        .then(response => {
+                            client.end()
+                            callback(null, true);
+                        })
+                        .catch(err => {
+                            console.error('Fallo en la Consulta modificar direccion', err.stack);
+                            client.end()
+                            callback(null, false);
+                        })
+                }
+                else {
+                    sentencia = "INSERT INTO central.\"direccion\" (\"dir_callePrincipal\", \"dir_activa\", per_id) "
+                        + "VALUES( '" + calleprincipal + "' ,'true', '" + idpersona + "'";
+                    client.query(sentencia)
+                        .then(response => {
+                            callback(null, true);
+                            client.end()
+                        })
+                        .catch(err => {
+                            console.error('Fallo en la Consulta Crear nacionalidad persona', err.stack);
+                            callback(null, false);
+                            client.end()
+                        })
+                }
+
+            })
+            .catch(err => {
+                console.error('Fallo en la Consulta modificar nacionalidad persona', err.stack);
+                client.end()
+                callback(null, false);
+            })
+    }
+    catch (error) {
+        reject(error);
+        callback(null, 0);
+    }
+}
+
+///////ACTUALIZAR LA NACIONALIDAD DE LA PERSONA EN LA CENTRALIZADA
+module.exports.modificarnacionalidadpersona = function (nacionalidad, idpersona, callback) {
+    try {
+        var client = new Client(db)
+        var sentencia;
+        sentencia = "SELECT * FROM central.\"nacionalidadPersona\" WHERE per_id=" + idpersona + ""
+        client.connect()
+        client.query(sentencia)
+            .then(response => {
+                if (response.rowCount > 0) {
+                    sentencia = "UPDATE central.\"nacionalidadPersona\" SET nac_id=" + nacionalidad.nac_id + " WHERE per_id=" + idpersona + ""
+                    client.query(sentencia)
+                        .then(response => {
+                            client.end()
+                            callback(null, true);
+                        })
+                        .catch(err => {
+                            console.error('Fallo en la Consulta modificar nacionalidad', err.stack);
+                            client.end()
+                            callback(null, false);
+                        })
+                }
+                else {
+                    sentencia = "INSERT INTO central.\"nacionalidadPersona\" (\"npe_esNacimiento\", \"npe_tieneVisaTrabajo\", per_id, nac_id, npe_default) "
+                        + "VALUES('true', '" + nacionalidad.nac_requiereVisaTrabajo + "' , '" + idpersona + "','" + nacionalidad.nac_id + "', 'true');";
+                    client.query(sentencia)
+                        .then(response => {
+                            callback(null, true);
+                            client.end()
+                        })
+                        .catch(err => {
+                            console.error('Fallo en la Consulta Crear nacionalidad persona', err.stack);
+                            callback(null, false);
+                            client.end()
+                        })
+                }
+
+            })
+            .catch(err => {
+                console.error('Fallo en la Consulta modificar nacionalidad persona', err.stack);
+                client.end()
+                callback(null, false);
+            })
+    }
+    catch (error) {
+        reject(error);
+        callback(null, 0);
+    }
+}
+

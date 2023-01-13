@@ -83,7 +83,6 @@ async function actualizarcamposportipo(idtipo, campocentralizada, tablacentraliz
                 if (estadocivil.length > 0) {
                     var idestadocivil = estadocivil[0].eci_id;
                     if (idestadocivil != objpersona.eci_id) {
-                        //var actualizacion = await new Promise(resolve => { centralizada.actualizarpersona(tablacentralizada, campocentralizada, idestadocivil, objpersona.per_id, (err, valor) => { resolve(valor); }) });
                         var actualizacion = centralizada.actualizarpersona(tablacentralizada, campocentralizada, idestadocivil, objpersona.per_id, function (Result) { });
                         if (actualizacion) {
                             console.log('Estado Civil actualizado correctamente')

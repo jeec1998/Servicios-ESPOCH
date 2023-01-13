@@ -11,7 +11,7 @@ GET http://localhost:4000/rutaCentral/listanacionalidades
 GET http://localhost:4000/rutaCentral/listagenero
 
 ###consumo personalizado de datos de la persona en la centralizada
-GET http://localhost:4000/rutaCentral/objpersonalizado/YB7426257
+GET http://localhost:4000/rutaCentral/objpersonalizado/0603605676
 
 ###consumo de paises
 GET http://localhost:4000/rutaCentral/listapais
@@ -22,8 +22,14 @@ GET http://localhost:4000/rutaCentral/listaprovinciadadopais/6
 
 ###consumo de ciudades
 ### numero de ID de la provincia
-GET http://localhost:4000/rutaCentral/listaciudadesdadoidprovincia/6
+GET http://localhost:4000/rutaCentral/listaciudadesdadoidprovincia/7
 
 ###consumo de parroquias
 ### numero de ID de la ciudad
 GET http://localhost:4000/rutaCentral/listaparroquiasdadoidciudad/16
+
+###consumo de etnias
+GET http://localhost:4000/rutaCentral/listaetnias
+
+###verificar nacionalidad persona
+GET http://localhost:4000/rutaCentral/verificarpersonanacionalidad/95464/8

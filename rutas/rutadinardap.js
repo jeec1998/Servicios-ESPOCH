@@ -23,14 +23,20 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             }
             var fechasistema = "";
             fechasistema = persona[0].per_fechaModificacion;
-            var listafecha=persona[0].per_fechaModificacion.toString().split(".")[0]
+            var listafecha = persona[0].per_fechaModificacion.toString().split(".")[0]
             let fechaactual = new Date();
             let resta = fechaactual.getTime() - fechasistema.getTime();
             var resultadoresta = Math.round(resta / (1000 * 60 * 60 * 24));
             if ((resultadoresta > numerodias) && (numerodias != 0)) {
                 var listadinardap = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
-                listado.push(persona[0]);
-                console.log('Datos de la persona actualizados en la centralizada')
+                if (listadinardap != null) {
+                    listado.push(listadinardap);
+                    console.log('Datos de la persona actualizados en la centralizada')
+                }
+                else {
+                    listado.push(persona[0]);
+                    console.log('Datos de la persona no actualizados en la centralizada')
+                }
             }
             else {
                 listado.push(persona[0]);
@@ -45,14 +51,13 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             if (cedula.length == 10) {
                 tipo = 2;
                 var registrar = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
-                if(registrar!=null)
-                {
+                if (registrar != null) {
                     return res.json({
                         success: true,
                         listado: registrar[0]
                     });
                 }
-                else{
+                else {
                     return res.json({
                         success: false,
                         mensaje: 'No se ha encontrado información en la Dinardap'
@@ -145,7 +150,7 @@ async function actualizarcamposportipo(idtipo, campocentralizada, tablacentraliz
     }
 }
 
-async function consumirserviciodinardap(tipo, cedula, res, persona, callback) {
+async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
     try {
         let listado = [];
         let listadevuelta = [];
@@ -171,6 +176,7 @@ async function consumirserviciodinardap(tipo, cedula, res, persona, callback) {
                         }
                         if (listado.length > 0) {
                             if (tipo == 1) {
+                                var fechamodificacion = formatDate(new Date());
                                 ////consume la dinardap y actualiza los campos establecidos en la base
                                 let listacamposactualizar = [];
                                 var campos = await new Promise(resolve => { centralizada.listacamposactualizar((err, valor) => { resolve(valor); }) });
@@ -188,8 +194,10 @@ async function consumirserviciodinardap(tipo, cedula, res, persona, callback) {
                                                     datosconyuge = datosconyuge + atr.valor + " ";
                                                     blnconyuge = true;
                                                 }
-                                                else {
-                                                    var personaactualizada = await new Promise(resolve => { actualizarcamposportipo(campoactualizar.ca_tipo, campoactualizar.ca_nombrecentralizada, campoactualizar.ca_tablacentralizada, atr.valor, persona[0], (err, valor) => { resolve(valor); }) });
+                                                else {                                                    
+                                                    var personaactualizada = await new Promise(resolve => { actualizarcamposportipo(campoactualizar.ca_tipo, campoactualizar.ca_nombrecentralizada, campoactualizar.ca_tablacentralizada, atr.valor, personas[0], (err, valor) => { resolve(valor); }) });
+                                                    console.log(personaactualizada)
+                                                    callback(null, personaactualizada);
                                                 };
                                             }
                                         }
@@ -349,11 +357,11 @@ async function consumirserviciodinardap(tipo, cedula, res, persona, callback) {
                                                 var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, personacentralizada.nac_reqvisa, personacentralizada.per_nacionalidad, (err, valor) => { resolve(valor); }) });
                                                 if (ingresoNacionalidad) {
                                                     console.log('Registro ingresado correctamente')
-                                                    callback(null,persona);
+                                                    callback(null, persona);
                                                 }
                                             }
                                         }
-                                    }                                
+                                    }
                                 }
                                 else {
                                     console.log('Error al registrar persona')
@@ -368,8 +376,12 @@ async function consumirserviciodinardap(tipo, cedula, res, persona, callback) {
                     }
                 });
             } else {
-                callback(null);
-                console.log('Error consumo dinardap: ' + err)
+                if ((tipo == 1)) {
+                    callback(null, personas[0]);
+                } else {
+                    callback(null);
+                    console.log('Error consumo dinardap: ' + err)
+                }
             }
 
         }

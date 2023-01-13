@@ -385,14 +385,14 @@ module.exports.modificardireccionpersona = function (calleprincipal, idpersona, 
                 }
                 else {
                     sentencia = "INSERT INTO central.\"direccion\" (\"dir_callePrincipal\", \"dir_activa\", per_id) "
-                        + "VALUES( '" + calleprincipal + "' ,'true', '" + idpersona + "'";
+                        + "VALUES( '" + calleprincipal + "' ,'true', '" + idpersona + "')";
                     client.query(sentencia)
                         .then(response => {
                             callback(null, true);
                             client.end()
                         })
                         .catch(err => {
-                            console.error('Fallo en la Consulta Crear nacionalidad persona', err.stack);
+                            console.error('Fallo en la Consulta Crear direccion persona', err.stack);
                             callback(null, false);
                             client.end()
                         })
@@ -400,7 +400,7 @@ module.exports.modificardireccionpersona = function (calleprincipal, idpersona, 
 
             })
             .catch(err => {
-                console.error('Fallo en la Consulta modificar nacionalidad persona', err.stack);
+                console.error('Fallo en la Consulta modificar direccion persona', err.stack);
                 client.end()
                 callback(null, false);
             })

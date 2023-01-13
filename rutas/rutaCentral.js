@@ -352,6 +352,102 @@ router.get('/listaciudadesdadoidprovincia/:idprovincia', async (req, res) => {
     }
 });
 
+router.get('/obtenerprovinciadadoid/:idprovincia', async (req, res) => {
+    const idprovincia = req.params.idprovincia;
+    try {
+        var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('provincia', 'pro_id', idprovincia, (err, valor) => { resolve(valor); }) });
+        if (provincia.length > 0) {
+            return res.json({
+                success: true,
+                provincia: provincia[0]
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                provincia: {}
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});   
+
+router.get('/obtenerciudaddadoid/:idciudad', async (req, res) => {
+    const idciudad = req.params.idciudad;
+    try {
+        var ciudades = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('ciudad', 'ciu_id', idciudad, (err, valor) => { resolve(valor); }) });
+        if (ciudades.length > 0) {
+            return res.json({
+                success: true,
+                ciudad: ciudades[0]
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                ciudad: {}
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/obtenerparroquiadadoid/:idparroquia', async (req, res) => {
+    const idparroquia = req.params.idparroquia;
+    try {
+        var parroquias = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('parroquia', 'prq_id', idparroquia, (err, valor) => { resolve(valor); }) });
+        if (parroquias.length > 0) {
+            return res.json({
+                success: true,
+                parroquia: parroquias[0]
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                parroquia: {}
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/obtenernacionalidaddadoid/:idnacionalidad', async (req, res) => {
+    const idnacionalidad = req.params.idnacionalidad;
+    try {
+        var nacionalidades = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('nacionalidad', 'nac_id', idnacionalidad, (err, valor) => { resolve(valor); }) });
+        if (nacionalidades.length > 0) {
+            return res.json({
+                success: true,
+                nacionalidad: nacionalidades[0]
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                nacionalidad: {}
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
 router.get('/listaparroquiasdadoidciudad/:idciudad', async (req, res) => {
     const idciudad = req.params.idciudad;
     try {
@@ -412,7 +508,7 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
 router.post('/actualizarpersona', async (req, res) => {
     var request = require('request');
     var jsonDataObj = req.body;
-    var fecha= formatDate(new Date());
+    var fecha = formatDate(new Date());
     var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersona(jsonDataObj.per_emailAlternativo, jsonDataObj.per_telefonoCelular, jsonDataObj.per_telefonoCasa, jsonDataObj.lugarprocedencia_id, jsonDataObj.gen_id, jsonDataObj.per_id, fecha, jsonDataObj.etn_id, (err, valor) => { resolve(valor); }) });
     if (actualizacionpersona) {
         var actualizadireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(jsonDataObj.dir_callePrincipal, jsonDataObj.per_id, jsonDataObj.lugarprocedencia_id, (err, valor) => { resolve(valor); }) });
@@ -430,35 +526,40 @@ router.post('/actualizarpersona', async (req, res) => {
                     }
                     else {
                         return res.json({
-                            success: true,
+                            success: false,
+                            mensaje:'Error al actualizar o crear registros en la tabla nacionalidad persona',
                             listado: []
                         });
                     }
                 }
                 else {
                     return res.json({
-                        success: true,
+                        success: false,
+                        mensaje:'Error en obtener información del objeto nacionalidad',
                         listado: []
                     });
                 }
             }
             else {
                 return res.json({
-                    success: true,
+                    success: false,
+                    mensaje: 'Error en el registro de la tabla nacionalidad',
                     listado: []
                 });
             }
         }
         else {
             return res.json({
-                success: true,
+                success: false,
+                mensaje: 'Error en el registro de la tabla direccion',
                 listado: []
             });
         }
     }
     else {
         return res.json({
-            success: true,
+            success: false,
+            mensaje: 'Error en el registro de la tabla persona',
             listado: []
         });
     }

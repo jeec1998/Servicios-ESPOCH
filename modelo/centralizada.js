@@ -77,6 +77,7 @@ module.exports.obtenerdocumentopormail = function (cedula, callback) {
 
 
 }
+
 module.exports.obtenerdocumentoporperid = function (idpersona, callback) {
     var client = new Client(db)
     var sentencia;
@@ -156,7 +157,26 @@ module.exports.obtenerdatosdadonombredelatablayelcampo = function (nombretabla, 
 module.exports.obtenerdatosdadonombredelatablayelcampoparainteger = function (nombretabla, nombrecampo, nombre, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "SELECT * FROM central." + nombretabla + " t WHERE t." + nombrecampo + "=" + nombre + ""
+    sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t." + nombrecampo + "=" + nombre + ""
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
+            client.end()
+        })
+
+
+}
+
+module.exports.obtenerinstruccionformaldadoidpersonaynumregistro = function (idpersona, numregistro, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT * FROM central.instruccionFormal i WHERE i.per_id = " + idpersona + " and i.ifo_registro=" + numregistro + ""
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -318,31 +338,12 @@ module.exports.ingresoNacionalidad = function (idpersona, tienevisa, idnacionali
         })
 }
 
-/*
-module.exports.actualizarcuentacentral = function (usuario, pw, saltillo, callback) {
-    var client = new Client(db)
-    client.connect()
-    client.query(" UPDATE central.cuenta SET cta_password='" + pw + "', \"cta_CodigoSalt\"='" + saltillo + "' WHERE cta_login='" + usuario + "';")
-        .then(response => {
-            client.end()
-            callback(null, response.rowCount);
-        })
-        .catch(err => {
-            console.error('Fallo en la Consulta', err.stack);
-            client.end()
-            callback(null, 0);
-        })
-}
-*/
-
-
-
 ///////ACTUALIZAR PERSONA EN LA CENTRALIZADA
 module.exports.modificardatospersona = function (email, telefonocelular, telefonocasa, idlugarnacimiento, idgenero, idpersona, fechamodificacion, idetnia, callback) {
     try {
         var client = new Client(db)
         var sentencia;
-        sentencia = "UPDATE central.persona SET \"per_emailAlternativo\"='" + email + "', \"per_telefonoCelular\"='" + telefonocelular + "', gen_id=" + idgenero + ", \"per_fechaModificacion\"='" + fechamodificacion + "', \"per_telefonoCasa\"='" + telefonocasa + "', lugarprocedencia_id=" + idlugarnacimiento + ",etn_id=" + idetnia + " WHERE per_id=" + idpersona + ""
+        sentencia = "UPDATE central.persona SET \"per_emailAlternativo\"='" + email + "', \"per_telefonoCelular\"='" + telefonocelular + "', gen_id=" + idgenero + ", \"per_fechaModificacion\"='" + fechamodificacion + "', \"per_telefonoCasa\"='" + telefonocasa + "', etn_id=" + idetnia + " WHERE per_id=" + idpersona + ""
         client.connect()
         client.query(sentencia)
             .then(response => {
@@ -460,4 +461,5 @@ module.exports.modificarnacionalidadpersona = function (nacionalidad, idpersona,
         callback(null, 0);
     }
 }
+
 

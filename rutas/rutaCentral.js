@@ -3,7 +3,8 @@ const router = express.Router();
 const Request = require("request");
 const crypto = require('crypto');
 const centralizada = require('./../modelo/centralizada');
-
+const urlAcademico = require('../config/urlAcademico');
+const soap = require('soap');
 
 router.get('/diaactualizacion/', (req, res) => {
     try {
@@ -374,7 +375,7 @@ router.get('/obtenerprovinciadadoid/:idprovincia', async (req, res) => {
             success: false
         });
     }
-});   
+});
 
 router.get('/obtenerciudaddadoid/:idciudad', async (req, res) => {
     const idciudad = req.params.idciudad;
@@ -475,10 +476,48 @@ router.get('/listaparroquiasdadoidciudad/:idciudad', async (req, res) => {
 router.get('/objpersonalizado/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     try {
-        console.log(cedula)
         var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedula, (err, valor) => { resolve(valor); }) });
         if (personapersonalizada != null) {
             if (personapersonalizada.length > 0) {
+                var procedenciapersona = personapersonalizada[0].per_procedencia;
+                const myArray = procedenciapersona.split("|");
+                if (myArray.length > 0) {
+                    var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('provincia', 'pro_id', myArray[0], (err, valor) => { resolve(valor); }) });
+                    if (provincia.length > 0) {
+                        var ciudad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('ciudad', 'ciu_id', myArray[1], (err, valor) => { resolve(valor); }) });
+                        if (ciudad.length > 0) {
+                            var parroquia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('parroquia', 'prq_id', myArray[2], (err, valor) => { resolve(valor); }) });
+                            if (parroquia.length > 0) {
+                                var procedenciastring = provincia[0].pro_nombre + "/" + ciudad[0].ciu_nombre + "/" + parroquia[0].prq_nombre;
+                                personapersonalizada[0].per_procedencia = procedenciastring;
+                            }
+                            else {
+                                return res.json({
+                                    success: false,
+                                    mensaje: 'No existen registros de parroquia de la persona'
+                                });
+                            }
+                        }
+                        else {
+                            return res.json({
+                                success: false,
+                                mensaje: 'No existen registros de ciudad de la persona'
+                            });
+                        }
+                    }
+                    else {
+                        return res.json({
+                            success: false,
+                            mensaje: 'No existen registros de provincia de la persona'
+                        });
+                    }
+                }
+                else {
+                    return res.json({
+                        success: false,
+                        mensaje: 'No existen registros de procedencia de la persona'
+                    });
+                }
                 return res.json({
                     success: true,
                     listado: personapersonalizada
@@ -527,7 +566,7 @@ router.post('/actualizarpersona', async (req, res) => {
                     else {
                         return res.json({
                             success: false,
-                            mensaje:'Error al actualizar o crear registros en la tabla nacionalidad persona',
+                            mensaje: 'Error al actualizar o crear registros en la tabla nacionalidad persona',
                             listado: []
                         });
                     }
@@ -535,7 +574,7 @@ router.post('/actualizarpersona', async (req, res) => {
                 else {
                     return res.json({
                         success: false,
-                        mensaje:'Error en obtener información del objeto nacionalidad',
+                        mensaje: 'Error en obtener información del objeto nacionalidad',
                         listado: []
                     });
                 }
@@ -566,27 +605,98 @@ router.post('/actualizarpersona', async (req, res) => {
 });
 
 
-router.get('/verificarpersonanacionalidad/:idpersona/:idnacionalidad', async (req, res) => {
-    const idciudad = req.params.idciudad;
-    const idnacionalidad = req.params.idnacionalidad;
+router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
+    const idpersona = req.params.idpersona;
+    let listacodigos = [];
     try {
-        var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('nacionalidad', 'nac_id', idnacionalidad, (err, valor) => { resolve(valor); }) });
-        if (objnacionalidad != null) {
-            if (objnacionalidad.length > 0) {
-                var nacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(objnacionalidad[0], 95464, (err, valor) => { resolve(valor); }) });
-                if (nacionalidad.length > 0) {
-                    return res.json({
-                        success: true,
-                        listado: nacionalidad
-                    });
+        var documentopersonal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('documentoPersonal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
+        if (documentopersonal != null) {
+            var objinstruccionformal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('instruccionFormal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
+            if (objinstruccionformal != null) {
+                if (objinstruccionformal.length > 0) {
+                    var listatitulosministerio = await new Promise(resolve => { serviciodinardaptitulobachiller(documentopersonal[0].pid_valor, (err, valor) => { resolve(valor); }) });
+                    if (listatitulosministerio != null) {
+                        if (listatitulosministerio.length > 0) {
+                            var registrado = false;
+                            for (tituloministerio of listatitulosministerio) {
+                                if (tituloministerio.campo == 'codigoRefrendacion') {
+                                    for (instformal of objinstruccionformal) {
+                                        if (tituloministerio.valor == instformal.ifo_registro) {
+                                            registrado = true;
+                                            console.log('Registrado: ' + tituloministerio.valor)
+                                        }
+                                    }
+                                    if (!registrado) {
+                                        ///registrar el titulo
+                                        console.log('Registrar titulo: ' + tituloministerio.valor)
+                                    }
+                                }
+
+                            }
+                            return res.json({
+                                success: true,
+                                listado: listatitulosministerio
+                            });
+                        }
+                    }
+                    else {
+                        return res.json({
+                            success: true,
+                            listado: []
+                        });
+                    }
+
                 }
                 else {
-                    return res.json({
-                        success: true,
-                        listado: []
-                    });
+                    ///no posee registros de instrucción formal en la base de datos centralizada
+                    var listatitulosministerio = await new Promise(resolve => { serviciodinardaptitulobachiller(documentopersonal[0].pid_valor, (err, valor) => { resolve(valor); }) });
+                    if (listatitulosministerio != null) {
+                        if (listatitulosministerio.length > 0) {
+                            var registrado = false;
+                            for (tituloministerio of listatitulosministerio) {
+                                if (tituloministerio.campo == 'codigoRefrendacion') {
+                                    for (instformal of objinstruccionformal) {
+                                        if (tituloministerio.valor == instformal.ifo_registro) {
+                                            registrado = true;
+                                            console.log('Registrado: ' + tituloministerio.valor)
+                                        }
+                                    }
+                                    if (!registrado) {
+                                        ///registrar el titulo
+                                        console.log('Registrar titulo: ' + tituloministerio.valor)
+                                    }
+                                }
+
+                            }
+                            return res.json({
+                                success: true,
+                                listado: listatitulosministerio
+                            });
+                        }
+                    }
+                    else {
+                        return res.json({
+                            success: true,
+                            mensaje: 'No posee registros de títulos en el ministerio de educación',
+                            listado: []
+                        });
+                    }
                 }
             }
+            else {
+                return res.json({
+                    success: true,
+                    mensaje: 'No existen registros de instrucción formal de la persona',
+                    listado: []
+                });
+            }
+        }
+        else {
+            return res.json({
+                success: true,
+                mensaje: 'No existen registros de la persona en la centralizada',
+                listado: []
+            });
         }
     } catch (err) {
         console.log('Error: ' + err)
@@ -595,6 +705,7 @@ router.get('/verificarpersonanacionalidad/:idpersona/:idnacionalidad', async (re
         });
     }
 });
+
 
 function padTo2Digits(num) {
     return num.toString().padStart(2, '0');
@@ -614,5 +725,44 @@ function formatDate(date) {
             padTo2Digits(date.getSeconds()),
         ].join(':')
     );
+}
+
+async function serviciodinardaptitulobachiller(cedula, callback) {
+    try {
+        let listado = [];
+        var url = urlAcademico.urlwsdl;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoPaqMinEducacion;
+        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedula };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.getFichaGeneral(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.return);
+                        var objjson = JSON.parse(jsonString);
+                        let listaregistrosdinardap = objjson.instituciones[0].datosPrincipales.registros;
+                        for (registro of listaregistrosdinardap) {
+                            listado.push(registro);
+                        }
+                        callback(null, listado);
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo dinardap - Ministerio de Educación: ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
 }
 module.exports = router;

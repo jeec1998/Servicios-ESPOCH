@@ -196,7 +196,6 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                                 }
                                                 else {                                                    
                                                     var personaactualizada = await new Promise(resolve => { actualizarcamposportipo(campoactualizar.ca_tipo, campoactualizar.ca_nombrecentralizada, campoactualizar.ca_tablacentralizada, atr.valor, personas[0], (err, valor) => { resolve(valor); }) });
-                                                    console.log(personaactualizada)
                                                     callback(null, personaactualizada);
                                                 };
                                             }

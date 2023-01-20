@@ -8,7 +8,7 @@ const { Client } = require('pg')
 module.exports.obtenerpersonapersonalizado = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "SELECT p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", dir.prq_id as idprqdireccion, (select prq_nombre from central.parroquia where prq_id=dir.prq_id) as parroquiadireccion, nac.nac_id, nac.nac_nombre, p.sex_id, p.per_procedencia, p.per_conyuge, p.per_idconyuge "
+    sentencia = "SELECT p.per_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", dir.prq_id as idprqdireccion, (select prq_nombre from central.parroquia where prq_id=dir.prq_id) as parroquiadireccion, nac.nac_id, nac.nac_nombre, p.sex_id, p.per_procedencia, p.per_conyuge, p.per_idconyuge, admision "
         + "FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id "
         + " WHERE d.pid_valor= '" + cedula + "'  "
     client.connect()
@@ -23,7 +23,6 @@ module.exports.obtenerpersonapersonalizado = function (cedula, callback) {
             client.end()
         })
 }
-
 module.exports.obtenerpersonadatoscompletos = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
@@ -42,7 +41,34 @@ module.exports.obtenerpersonadatoscompletos = function (cedula, callback) {
             client.end()
         })
 }
-
+module.exports.obtenerdatospersonaincluidodiscapacidad = function (cedula, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT p.per_id, pid_valor, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\"," +
+        "p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre," +
+        "p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", dir.prq_id as idprqdireccion, " +
+        "(select prq_nombre from central.parroquia where prq_id=dir.prq_id) as parroquiadireccion, nac.nac_id, nac.nac_nombre, p.sex_id, " +
+        "p.per_procedencia, p.per_conyuge, p.per_idconyuge,  cd.cdi_id as idcarnetdiscapacidad, cd.cdi_numero as numerocarnetdiscapacidad, dc.dis_id as iddiscapacidad, dc.dis_valor as porcentajediscapacidad, td.tdi_id as idtipodiscapacidad, td.tdi_nombre as tipodiscapacidad, p.admision " +
+        " FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id " +
+        "LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id " +
+        "LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id " +
+        "LEFT JOIN central.\"carnetDiscapacidad\" cd on cd.per_id=p.per_id " +
+        "LEFT JOIN central.discapacidad dc on dc.cdi_id=cd.cdi_id " +
+        "LEFT JOIN central.\"tipoDiscapacidad\" td on td.tdi_id=dc.tdi_id " +
+        "INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id " +
+        " WHERE d.pid_valor= '" + cedula + "'  "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            callback(null, false);
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+}
 module.exports.obtenerdocumento = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
@@ -59,7 +85,6 @@ module.exports.obtenerdocumento = function (cedula, callback) {
             client.end()
         })
 }
-
 module.exports.obtenerpersonadadonombresapellidosyfechanacimiento = function (nombres, apellido1, apellido2, fechaNacimiento, callback) {
     var client = new Client(db)
     var sentencia;
@@ -77,7 +102,6 @@ module.exports.obtenerpersonadadonombresapellidosyfechanacimiento = function (no
             client.end()
         })
 }
-
 module.exports.obtenerdocumentopormail = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
@@ -96,7 +120,6 @@ module.exports.obtenerdocumentopormail = function (cedula, callback) {
 
 
 }
-
 module.exports.obtenerdocumentoporperid = function (idpersona, callback) {
     var client = new Client(db)
     var sentencia;
@@ -115,7 +138,6 @@ module.exports.obtenerdocumentoporperid = function (idpersona, callback) {
 
 
 }
-
 module.exports.obtenerestadocivildadonombre = function (nombre, callback) {
     var client = new Client(db)
     var sentencia;
@@ -134,7 +156,6 @@ module.exports.obtenerestadocivildadonombre = function (nombre, callback) {
 
 
 }
-
 module.exports.obtenersexodadonombre = function (nombre, callback) {
     var client = new Client(db)
     var sentencia;
@@ -153,7 +174,6 @@ module.exports.obtenersexodadonombre = function (nombre, callback) {
 
 
 }
-
 module.exports.obtenerdatosdadonombredelatablayelcampo = function (nombretabla, nombrecampo, nombre, callback) {
     var client = new Client(db)
     var sentencia;
@@ -172,11 +192,10 @@ module.exports.obtenerdatosdadonombredelatablayelcampo = function (nombretabla, 
 
 
 }
-
 module.exports.obtenerregistrodadonombre = function (nombretabla, nombrecampo, nombre, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "SELECT * FROM central." + nombretabla + " t WHERE t." + nombrecampo + "='" + nombre + "'"
+    sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t." + nombrecampo + "='" + nombre + "'"
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -191,7 +210,6 @@ module.exports.obtenerregistrodadonombre = function (nombretabla, nombrecampo, n
 
 
 }
-
 module.exports.obtenerdatosdadonombredelatablayelcampoparainteger = function (nombretabla, nombrecampo, nombre, callback) {
     var client = new Client(db)
     var sentencia;
@@ -210,7 +228,6 @@ module.exports.obtenerdatosdadonombredelatablayelcampoparainteger = function (no
 
 
 }
-
 module.exports.obtenerinstruccionformaldadoidpersonaynumregistro = function (idpersona, numregistro, callback) {
     var client = new Client(db)
     var sentencia;
@@ -229,7 +246,6 @@ module.exports.obtenerinstruccionformaldadoidpersonaynumregistro = function (idp
 
 
 }
-
 module.exports.obtenertituloacademicodadoidinstitucionytitulo = function (idinstitucion, idtitulo, callback) {
     var client = new Client(db)
     var sentencia;
@@ -248,7 +264,6 @@ module.exports.obtenertituloacademicodadoidinstitucionytitulo = function (idinst
 
 
 }
-
 module.exports.obtenerdiasdeconfiguracion = function (callback) {
     var client = new Client(db)
     var sentencia;
@@ -267,7 +282,6 @@ module.exports.obtenerdiasdeconfiguracion = function (callback) {
 
 
 }
-
 module.exports.obtenerregistrosportabla = function (nombretabla, callback) {
     var client = new Client(db)
     var sentencia;
@@ -286,7 +300,6 @@ module.exports.obtenerregistrosportabla = function (nombretabla, callback) {
 
 
 }
-
 module.exports.listacamposactualizar = function (callback) {
     var client = new Client(db)
     var sentencia;
@@ -305,7 +318,6 @@ module.exports.listacamposactualizar = function (callback) {
 
 
 }
-
 module.exports.actualizarpersona = function (nombretabla, campocentralizada, valor, idpersona, callback) {
     var client = new Client(db)
     var sentencia;
@@ -322,7 +334,6 @@ module.exports.actualizarpersona = function (nombretabla, campocentralizada, val
             client.end()
         })
 }
-
 module.exports.ingresoPersonaCentralizada = function (objPersona, callback) {
     var client = new Client(db)
     var sentencia;
@@ -340,7 +351,6 @@ module.exports.ingresoPersonaCentralizada = function (objPersona, callback) {
             client.end()
         })
 }
-
 module.exports.ingresoDocumentoPersonal = function (cedula, idpersona, callback) {
     var client = new Client(db)
     var sentencia;
@@ -358,7 +368,6 @@ module.exports.ingresoDocumentoPersonal = function (cedula, idpersona, callback)
             client.end()
         })
 }
-
 module.exports.ingresoDireccionPersona = function (idpersona, calleprincipal, numcasa, idparroquia, callback) {
     var client = new Client(db)
     var sentencia;
@@ -376,7 +385,6 @@ module.exports.ingresoDireccionPersona = function (idpersona, calleprincipal, nu
             client.end()
         })
 }
-
 module.exports.ingresoNacionalidad = function (idpersona, tienevisa, idnacionalidad, callback) {
     var client = new Client(db)
     var sentencia;
@@ -394,7 +402,40 @@ module.exports.ingresoNacionalidad = function (idpersona, tienevisa, idnacionali
             client.end()
         })
 }
-
+module.exports.ingresocarnetDiscapacidad = function (numconadis, idorganizacion, idpersona, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "INSERT INTO central.\"carnetDiscapacidad\" (\"cdi_numero\", org_id, per_id, cdi_habilitado) "
+        + "VALUES('" + numconadis + "', '" + idorganizacion + "', '" + idpersona + "', 'true');";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
+            client.end()
+        })
+}
+module.exports.ingresoDiscapacidad = function (porcentajediscapacidad, idtipodiscapacidad, idcarnetdiscapacidad, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "INSERT INTO central.\"discapacidad\" (dis_valor, tdi_id, cad_id, cdi_id, mdi_id, dis_observacion) "
+        + "VALUES('" + porcentajediscapacidad + "', '" + idtipodiscapacidad + "','1','" + idcarnetdiscapacidad + "', '1','REGISTRO DESDE INFODIGITAL');";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
+            client.end()
+        })
+}
 ///////ACTUALIZAR PERSONA EN LA CENTRALIZADA
 module.exports.modificardatospersona = function (email, telefonocelular, telefonocasa, idlugarnacimiento, idgenero, idpersona, fechamodificacion, idetnia, callback) {
     try {
@@ -418,13 +459,12 @@ module.exports.modificardatospersona = function (email, telefonocelular, telefon
         callback(null, 0);
     }
 }
-
 ///////ACTUALIZAR PERSONA EN LA CENTRALIZADA
 module.exports.modificarpersonacondatosmatriz = function (objpersonamatriz, idpersonacentral, callback) {
     try {
         var client = new Client(db)
         var sentencia;
-        sentencia = "UPDATE central.persona SET \"per_nombres\"='" + objpersonamatriz.per_nombres + "', \"per_primerApellido\"='" + objpersonamatriz.per_primerapellido + "', \"per_segundoApellido\"='" + objpersonamatriz.per_segundoapellido + "', \"per_fechaNacimiento\"='" + objpersonamatriz.per_fechanacimiento + "', \"etn_id\"='" + objpersonamatriz.etn_id + "', \"eci_id\"='" + objpersonamatriz.eci_id + "', \"gen_id\"='" + objpersonamatriz.gen_id + "', \"per_fechaModificacion\"='" + objpersonamatriz.per_fechamodificacion + "', \"per_lugarprocedencia_id\"='" + objpersonamatriz.lugarprocedencia_id + "', \"sex_id\"='" + objpersonamatriz.sex_id + "', \"per_procedencia\"='" + objpersonamatriz.per_procedencia + "', \"admision\"='" + objpersonamatriz.admision + "' WHERE per_id=" + idpersonacentral + ""
+        sentencia = "UPDATE central.persona SET \"per_nombres\"='" + objpersonamatriz.per_nombres + "', \"per_primerApellido\"='" + objpersonamatriz.per_primerapellido + "', \"per_segundoApellido\"='" + objpersonamatriz.per_segundoapellido + "', \"per_fechaNacimiento\"='" + objpersonamatriz.per_fechanacimiento + "', \"etn_id\"='" + objpersonamatriz.etn_id + "', \"eci_id\"='" + objpersonamatriz.eci_id + "', \"gen_id\"='" + objpersonamatriz.gen_id + "', \"per_fechaModificacion\"='" + objpersonamatriz.per_fechamodificacion + "', \"lugarprocedencia_id\"='" + objpersonamatriz.lugarprocedencia_id + "', \"sex_id\"='" + objpersonamatriz.sex_id + "', \"per_procedencia\"='" + objpersonamatriz.per_procedencia + "', \"admision\"='" + objpersonamatriz.admision + "' WHERE per_id=" + idpersonacentral + ""
         client.connect()
         client.query(sentencia)
             .then(response => {
@@ -442,7 +482,6 @@ module.exports.modificarpersonacondatosmatriz = function (objpersonamatriz, idpe
         callback(null, 0);
     }
 }
-
 ///////ACTUALIZAR LA DIRECCION DE LA PERSONA EN LA CENTRALIZADA
 module.exports.modificardireccionpersona = function (calleprincipal, idpersona, idparroquia, callback) {
     try {
@@ -492,7 +531,6 @@ module.exports.modificardireccionpersona = function (calleprincipal, idpersona, 
         callback(null, 0);
     }
 }
-
 ///////ACTUALIZAR LA NACIONALIDAD DE LA PERSONA EN LA CENTRALIZADA
 module.exports.modificarnacionalidadpersona = function (nacionalidad, idpersona, callback) {
     try {
@@ -542,7 +580,6 @@ module.exports.modificarnacionalidadpersona = function (nacionalidad, idpersona,
         callback(null, 0);
     }
 }
-
 module.exports.ingresoInstruccionFormal = function (idpersona, idtituloacademico, ifo_tiempo, ifo_registro, ifo_fecharegistro, callback) {
     var client = new Client(db)
     var sentencia;
@@ -560,7 +597,6 @@ module.exports.ingresoInstruccionFormal = function (idpersona, idtituloacademico
             client.end()
         })
 }
-
 module.exports.ingresoTituloAcademico = function (idtitulo, idinstitucion, callback) {
     var client = new Client(db)
     var sentencia;
@@ -578,7 +614,6 @@ module.exports.ingresoTituloAcademico = function (idtitulo, idinstitucion, callb
             client.end()
         })
 }
-
 module.exports.ingresoinstitucion = function (institucionnombre, callback) {
     var client = new Client(db)
     var sentencia;
@@ -596,7 +631,6 @@ module.exports.ingresoinstitucion = function (institucionnombre, callback) {
             client.end()
         })
 }
-
 module.exports.ingresotitulo = function (titulonombre, nivelacademico, callback) {
     var client = new Client(db)
     var sentencia;
@@ -614,7 +648,6 @@ module.exports.ingresotitulo = function (titulonombre, nivelacademico, callback)
             client.end()
         })
 }
-
 module.exports.ingresotablacon2campos = function (nombretabla, campo1, campo2, valor1, valor2, callback) {
     var client = new Client(db)
     var sentencia;
@@ -649,5 +682,21 @@ module.exports.obtenerregistroempiezaconunvalor = function (nombretabla, nombrec
         })
 
 
+}
+module.exports.actualizardiscapacidad = function (porcentaje, tipodiscapacidad, idcarnet, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = " UPDATE central.discapacidad SET dis_valor='" + porcentaje + "', tdi_id='" + tipodiscapacidad + "' WHERE cdi_id=" + idcarnet + "";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
+            client.end()
+        })
 }
 

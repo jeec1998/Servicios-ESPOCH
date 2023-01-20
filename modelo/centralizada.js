@@ -177,7 +177,6 @@ module.exports.obtenerregistrodadonombre = function (nombretabla, nombrecampo, n
     var client = new Client(db)
     var sentencia;
     sentencia = "SELECT * FROM central." + nombretabla + " t WHERE t." + nombrecampo + "='" + nombre + "'"
-    console.log(sentencia)
     client.connect()
     client.query(sentencia)
         .then(response => {

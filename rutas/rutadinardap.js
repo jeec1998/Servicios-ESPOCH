@@ -29,14 +29,20 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             var resultadoresta = Math.round(resta / (1000 * 60 * 60 * 24));
             var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
             if ((resultadoresta > numerodias) && (numerodias != 0)) {
-                var listadinardap = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
-                if (listadinardap != null) {
-                    personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
-                    if (personapersonalizada != null) {
-                        if (personapersonalizada.length > 0) {
-                            listado.push(personapersonalizada[0]);
-                            console.log('Datos de la persona actualizados en la centralizada')
+                if (!persona[0].admision) {
+                    var listadinardap = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
+                    if (listadinardap != null) {
+                        personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                        if (personapersonalizada != null) {
+                            if (personapersonalizada.length > 0) {
+                                listado.push(personapersonalizada[0]);
+                                console.log('Datos de la persona actualizados en la centralizada')
+                            }
                         }
+                    }
+                    else {
+                        listado.push(personapersonalizada[0]);
+                        console.log('Datos de la persona no actualizados en la centralizada')
                     }
                 }
                 else {

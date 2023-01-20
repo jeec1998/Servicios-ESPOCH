@@ -576,14 +576,14 @@ router.post('/registrarpersona', async (req, res) => {
     try {
         var fechadetalle = objpersona.usufechanac.split('/');
         var personamatriz = {};
-        var nacionalidad = await new Promise(resolve => { verificacionregistro('nacionalidad', 'nac_nombre', objpersona.nacionalidad, (err, valor) => { resolve(valor); }) });
-        var genero = await new Promise(resolve => { verificacionregistro('genero', 'gen_nombre', objpersona.genero, (err, valor) => { resolve(valor); }) });
+        var nacionalidad = await new Promise(resolve => { verificacionregistro('nacionalidad', 'nac_nombre', objpersona.nacionalidad, 0, 0, (err, valor) => { resolve(valor); }) });
+        var genero = await new Promise(resolve => { verificacionregistro('genero', 'gen_nombre', objpersona.genero, 0, 0, (err, valor) => { resolve(valor); }) });
         var estadocivil = await new Promise(resolve => { centralizada.obtenerregistroempiezaconunvalor('estadoCivil', 'eci_nombre', objpersona.estadocivil, (err, valor) => { resolve(valor); }) });
-        var provincia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('provincia', 'pro_nombre', objpersona.provinciareside, (err, valor) => { resolve(valor); }) });
+        var provincia = await new Promise(resolve => { verificacionregistro('provincia', 'pro_nombre', objpersona.provinciareside, 0, 0, (err, valor) => { resolve(valor); }) });
         var sexo = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('sexo', 'sex_nombre', objpersona.sexo, (err, valor) => { resolve(valor); }) });
         var etnia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('etnia', 'etn_nombre', objpersona.autoidentificacion.substring(0, 3), (err, valor) => { resolve(valor); }) });
-        var ciudad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('ciudad', 'ciu_nombre', objpersona.cantonreside, (err, valor) => { resolve(valor); }) });
-        var parroquia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('parroquia', 'prq_nombre', objpersona.parroquiareside.split(',')[0], (err, valor) => { resolve(valor); }) });
+        var ciudad = await new Promise(resolve => { verificacionregistro('ciudad', 'ciu_nombre', objpersona.cantonreside, provincia.pro_id, 0, (err, valor) => { resolve(valor); }) });
+        var parroquia = await new Promise(resolve => { verificacionregistro('parroquia', 'prq_nombre', objpersona.parroquiareside, provincia.pro_id, ciudad.ciu_id, (err, valor) => { resolve(valor); }) });
         var listaapellidos = objpersona.apellidos.split(' ');
         var primerApellido = "";
         var segundoApellido = "";
@@ -615,18 +615,22 @@ router.post('/registrarpersona', async (req, res) => {
             per_fechacreacion: formatDate(new Date()),
             per_modificadopor: 0,
             per_fechamodificacion: formatDate(new Date()),
-            lugarprocedencia_id: parroquia[0].prq_id,
+            lugarprocedencia_id: parroquia.prq_id,
             sex_id: sexo[0].sex_id,
-            per_procedencia: provincia[0].pro_id + '|' + ciudad[0].ciu_id + '|' + parroquia[0].prq_id,
+            per_procedencia: provincia.pro_id + '|' + ciudad.ciu_id + '|' + parroquia.prq_id,
             per_conyuge: "",
             per_idconyuge: "",
             per_cedula: objpersona.identificacion,
             admision: true,
-            carnetconadis:objpersona.carnetconadis,
-            tipodiscapacidad:objpersona.tipodiscapacidad,
-            porcentajediscapacidad:objpersona.porcentajediscapacidad
-        }        
-        var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
+            carnetconadis: objpersona.carnetconadis,
+            tipodiscapacidad: objpersona.tipodiscapacidad,
+            porcentajediscapacidad: objpersona.porcentajediscapacidad
+        }
+        return res.json({
+            success: true,
+            listado: personamatriz
+        });
+        /*var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
         if (personacentralizada == null) {
             console.log('registrar los datos lista en null')
             var registrarpersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personamatriz, (err, valor) => { resolve(valor); }) });
@@ -676,7 +680,7 @@ router.post('/registrarpersona', async (req, res) => {
         return res.json({
             success: true,
             listado: personacentralizada
-        });
+        });*/
     } catch (err) {
         console.log('Error: ' + err)
         return res.json({
@@ -1044,7 +1048,7 @@ async function registrartitulocentralizada(objtitulodinardap, per_id, callback) 
         return callback(null);
     }
 }
-async function verificacionregistro(tabla, nombrecampo, valor, callback) {
+async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idciudad, callback) {
     try {
         var objetobase = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo(tabla, nombrecampo, valor, (err, valor) => { resolve(valor); }) });
         if (objetobase != null) {
@@ -1070,7 +1074,35 @@ async function verificacionregistro(tabla, nombrecampo, valor, callback) {
                         }
                     }
                     else {
-                        return callback(null)
+                        if (tabla == 'provincia') {
+                            var ingresoprovincia = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'pro_nombre', 'pai_id', valor, 6, (err, valor) => { resolve(valor); }) });
+                            if (ingresoprovincia) {
+                                var objprovincia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('provincia', 'pro_nombre', valor, (err, valor) => { resolve(valor); }) });
+                                return callback(null, objprovincia[0])
+                            }
+                        }
+                        else {
+                            if (tabla == 'ciudad') {
+                                var ingresociudad = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'ciu_nombre', 'pro_id', valor, idprovincia, (err, valor) => { resolve(valor); }) });
+                                if (ingresociudad) {
+                                    var objciudad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('ciudad', 'ciu_nombre', valor, (err, valor) => { resolve(valor); }) });
+                                    return callback(null, objciudad[0])
+                                }
+                            }
+                            else {
+                                if (tabla == 'parroquia') {
+                                    var ingresoparroquia = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'prq_nombre', 'ciu_id', valor, idciudad, (err, valor) => { resolve(valor); }) });
+                                    if (ingresoparroquia) {
+                                        var objparroquia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('parroquia', 'prq_nombre', valor, (err, valor) => { resolve(valor); }) });
+                                        return callback(null, objparroquia[0])
+                                    }
+                                }
+                                else {
+                                    return callback(null)
+                                }
+                            }
+                        }
+
                     }
                 }
             }
@@ -1079,8 +1111,8 @@ async function verificacionregistro(tabla, nombrecampo, valor, callback) {
             if (tabla == 'nacionalidad') {
                 var ingresonacionalidad = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'nac_nombre', 'nac_requiereVisaTrabajo', valor, false, (err, valor) => { resolve(valor); }) });
                 if (ingresonacionalidad) {
-                    var objnacionalidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('nacionalidad', 'nac_nombre', nacionalidadp, (err, valor) => { resolve(valor); }) });
-                    return callback(null, objnacionalidad[0]);
+                    var objnacionalidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('nacionalidad', 'nac_nombre', valor, (err, valor) => { resolve(valor); }) });
+                    return callback(null, objnacionalidad[0])
                 }
             }
             else {
@@ -1094,7 +1126,35 @@ async function verificacionregistro(tabla, nombrecampo, valor, callback) {
                     }
                 }
                 else {
-                    return callback(null)
+                    if (tabla == 'provincia') {
+                        var ingresoprovincia = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'pro_nombre', 'pai_id', valor, 6, (err, valor) => { resolve(valor); }) });
+                        if (ingresoprovincia) {
+                            var objprovincia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('provincia', 'pro_nombre', valor, (err, valor) => { resolve(valor); }) });
+                            return callback(null, objprovincia[0])
+                        }
+                    }
+                    else {
+                        if (tabla == 'ciudad') {
+                            var ingresociudad = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'ciu_nombre', 'pro_id', valor, idprovincia, (err, valor) => { resolve(valor); }) });
+                            if (ingresociudad) {
+                                var objciudad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('ciudad', 'ciu_nombre', valor, (err, valor) => { resolve(valor); }) });
+                                return callback(null, objciudad[0])
+                            }
+                        }
+                        else {
+                            if (tabla == 'parroquia') {
+                                var ingresoparroquia = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'prq_nombre', 'ciu_id', valor, idciudad, (err, valor) => { resolve(valor); }) });
+                                if (ingresoparroquia) {
+                                    var objparroquia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('parroquia', 'prq_nombre', valor, (err, valor) => { resolve(valor); }) });
+                                    return callback(null, objparroquia[0])
+                                }
+                            }
+                            else {
+                                return callback(null)
+                            }
+                        }
+                    }
+
                 }
             }
         }

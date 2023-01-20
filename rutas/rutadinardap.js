@@ -27,20 +27,30 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             let fechaactual = new Date();
             let resta = fechaactual.getTime() - fechasistema.getTime();
             var resultadoresta = Math.round(resta / (1000 * 60 * 60 * 24));
+            var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
             if ((resultadoresta > numerodias) && (numerodias != 0)) {
                 var listadinardap = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
                 if (listadinardap != null) {
-                    listado.push(listadinardap);
-                    console.log('Datos de la persona actualizados en la centralizada')
+                    personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                    if (personapersonalizada != null) {
+                        if (personapersonalizada.length > 0) {
+                            listado.push(personapersonalizada[0]);
+                            console.log('Datos de la persona actualizados en la centralizada')
+                        }
+                    }
                 }
                 else {
-                    listado.push(persona[0]);
+                    listado.push(personapersonalizada[0]);
                     console.log('Datos de la persona no actualizados en la centralizada')
                 }
             }
             else {
-                listado.push(persona[0]);
-                console.log('Persona devuelta de la centralizada')
+                if (personapersonalizada != null) {
+                    if (personapersonalizada.length > 0) {
+                        listado.push(personapersonalizada[0]);
+                        console.log('Persona devuelta de la centralizada')
+                    }
+                }
             }
             return res.json({
                 success: true,
@@ -52,10 +62,15 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
                 tipo = 2;
                 var registrar = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
                 if (registrar != null) {
-                    return res.json({
-                        success: true,
-                        listado: registrar[0]
-                    });
+                    var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                    if (personapersonalizada != null) {
+                        if (personapersonalizada.length > 0) {
+                            return res.json({
+                                success: true,
+                                listado: personapersonalizada[0]
+                            });
+                        }
+                    }
                 }
                 else {
                     return res.json({
@@ -66,7 +81,7 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             }
             else {
                 return res.json({
-                    success: true,
+                    success: false,
                     mensaje: 'Cédula incorrecta'
                 });
             }
@@ -194,7 +209,7 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                                     datosconyuge = datosconyuge + atr.valor + " ";
                                                     blnconyuge = true;
                                                 }
-                                                else {                                                    
+                                                else {
                                                     var personaactualizada = await new Promise(resolve => { actualizarcamposportipo(campoactualizar.ca_tipo, campoactualizar.ca_nombrecentralizada, campoactualizar.ca_tablacentralizada, atr.valor, personas[0], (err, valor) => { resolve(valor); }) });
                                                     callback(null, personaactualizada);
                                                 };
@@ -298,7 +313,7 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                             if (objparroquia.length > 0) {
                                                 idparroquia = objparroquia[0].prq_id;
                                             }
-                                            var procedenciapersona = idprovincia + '/' + idciudad + '/' + idparroquia;
+                                            var procedenciapersona = idprovincia + '|' + idciudad + '|' + idparroquia;
                                             var lugarprocedencia = idparroquia;
                                         }
                                     }

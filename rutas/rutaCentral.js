@@ -25,24 +25,6 @@ router.get('/diaactualizacion/', (req, res) => {
         });
     }
 });
-async function obtenerdiasdeactualizacion(callback) {
-    try {
-        let listado = [];
-        var numdias = await new Promise(resolve => { centralizada.obtenerdiasdeconfiguracion((err, valor) => { resolve(valor); }) });
-        if (numdias.length > 0) {
-            listado.push(numdias[0].valor);
-        }
-        else {
-            return callback("X");
-        }
-        return callback(listado);
-    } catch (err) {
-        console.error('Fallo en la Consulta', err.stack)
-        console.log('Error: ' + err)
-        return callback(false);
-    }
-}
-
 router.get('/personaPorDocumento/:strCedula', (req, res) => {
     const strCedula = req.params.strCedula;
     var datos;
@@ -156,8 +138,6 @@ router.get('/personaGrupo/:op/:param1/:param2/:param3', (req, res) => {
         return res.json(body);
     });
 });
-
-
 router.post('/envioCorreo', (req, res) => {
     var request = require('request');
     const strAsunto = req.body.strAsunto;
@@ -178,7 +158,6 @@ router.post('/envioCorreo', (req, res) => {
         });
     });
 });
-
 router.get('/generarkey/:dependencia', (req, res) => {
     const id = req.params.dependencia;
     const myArray = id.split(" ");
@@ -210,7 +189,6 @@ router.get('/generarkey/:dependencia', (req, res) => {
         return res.json({ success: true, cargo: body });
     });*/
 });
-
 router.get('/listanacionalidades/', async (req, res) => {
     try {
         var nacionalidades = await new Promise(resolve => { centralizada.obtenerregistrosportabla('nacionalidad', (err, valor) => { resolve(valor); }) });
@@ -233,7 +211,6 @@ router.get('/listanacionalidades/', async (req, res) => {
         });
     }
 });
-
 router.get('/listagenero/', async (req, res) => {
     try {
         var genero = await new Promise(resolve => { centralizada.obtenerregistrosportabla('genero', (err, valor) => { resolve(valor); }) });
@@ -256,7 +233,6 @@ router.get('/listagenero/', async (req, res) => {
         });
     }
 });
-
 router.get('/listaetnias/', async (req, res) => {
     try {
         var etnias = await new Promise(resolve => { centralizada.obtenerregistrosportabla('etnia', (err, valor) => { resolve(valor); }) });
@@ -279,7 +255,6 @@ router.get('/listaetnias/', async (req, res) => {
         });
     }
 });
-
 router.get('/listapais/', async (req, res) => {
     try {
         var pais = await new Promise(resolve => { centralizada.obtenerregistrosportabla('pais', (err, valor) => { resolve(valor); }) });
@@ -302,7 +277,6 @@ router.get('/listapais/', async (req, res) => {
         });
     }
 });
-
 router.get('/listaprovinciadadopais/:idpais', async (req, res) => {
     const idpais = req.params.idpais;
     try {
@@ -326,8 +300,6 @@ router.get('/listaprovinciadadopais/:idpais', async (req, res) => {
         });
     }
 });
-
-
 router.get('/listaciudadesdadoidprovincia/:idprovincia', async (req, res) => {
     const idprovincia = req.params.idprovincia;
     try {
@@ -352,7 +324,6 @@ router.get('/listaciudadesdadoidprovincia/:idprovincia', async (req, res) => {
         });
     }
 });
-
 router.get('/obtenerprovinciadadoid/:idprovincia', async (req, res) => {
     const idprovincia = req.params.idprovincia;
     try {
@@ -376,7 +347,6 @@ router.get('/obtenerprovinciadadoid/:idprovincia', async (req, res) => {
         });
     }
 });
-
 router.get('/obtenerciudaddadoid/:idciudad', async (req, res) => {
     const idciudad = req.params.idciudad;
     try {
@@ -400,7 +370,6 @@ router.get('/obtenerciudaddadoid/:idciudad', async (req, res) => {
         });
     }
 });
-
 router.get('/obtenerparroquiadadoid/:idparroquia', async (req, res) => {
     const idparroquia = req.params.idparroquia;
     try {
@@ -424,7 +393,6 @@ router.get('/obtenerparroquiadadoid/:idparroquia', async (req, res) => {
         });
     }
 });
-
 router.get('/obtenernacionalidaddadoid/:idnacionalidad', async (req, res) => {
     const idnacionalidad = req.params.idnacionalidad;
     try {
@@ -448,7 +416,6 @@ router.get('/obtenernacionalidaddadoid/:idnacionalidad', async (req, res) => {
         });
     }
 });
-
 router.get('/listaparroquiasdadoidciudad/:idciudad', async (req, res) => {
     const idciudad = req.params.idciudad;
     try {
@@ -472,7 +439,6 @@ router.get('/listaparroquiasdadoidciudad/:idciudad', async (req, res) => {
         });
     }
 });
-
 router.get('/objpersonalizado/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     try {
@@ -543,14 +509,13 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
         });
     }
 });
-
 router.post('/actualizarpersona', async (req, res) => {
     var request = require('request');
     var jsonDataObj = req.body;
     var fecha = formatDate(new Date());
     var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersona(jsonDataObj.per_emailAlternativo, jsonDataObj.per_telefonoCelular, jsonDataObj.per_telefonoCasa, jsonDataObj.lugarprocedencia_id, jsonDataObj.gen_id, jsonDataObj.per_id, fecha, jsonDataObj.etn_id, (err, valor) => { resolve(valor); }) });
     if (actualizacionpersona) {
-        var actualizadireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(jsonDataObj.dir_callePrincipal, jsonDataObj.per_id, jsonDataObj.lugarprocedencia_id, (err, valor) => { resolve(valor); }) });
+        var actualizadireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(jsonDataObj.dir_callePrincipal, jsonDataObj.per_id, jsonDataObj.idprqdireccion, (err, valor) => { resolve(valor); }) });
         if (actualizadireccion) {
             var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('nacionalidad', 'nac_id', jsonDataObj.nac_id, (err, valor) => { resolve(valor); }) });
             if (objnacionalidad != null) {
@@ -603,98 +568,211 @@ router.post('/actualizarpersona', async (req, res) => {
         });
     }
 });
-
-
-router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
-    const idpersona = req.params.idpersona;
-    let listacodigos = [];
+router.post('/registrarpersona', async (req, res) => {
+    var request = require('request');
+    var objpersona = req.body;
+    var nacionalidadregistrar = 0;
+    var fecha = formatDate(new Date());
     try {
-        var documentopersonal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('documentoPersonal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
-        if (documentopersonal != null) {
-            var objinstruccionformal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('instruccionFormal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
-            if (objinstruccionformal != null) {
-                if (objinstruccionformal.length > 0) {
-                    var listatitulosministerio = await new Promise(resolve => { serviciodinardaptitulobachiller(documentopersonal[0].pid_valor, (err, valor) => { resolve(valor); }) });
-                    if (listatitulosministerio != null) {
-                        if (listatitulosministerio.length > 0) {
-                            var registrado = false;
-                            for (tituloministerio of listatitulosministerio) {
-                                if (tituloministerio.campo == 'codigoRefrendacion') {
-                                    for (instformal of objinstruccionformal) {
-                                        if (tituloministerio.valor == instformal.ifo_registro) {
-                                            registrado = true;
-                                            console.log('Registrado: ' + tituloministerio.valor)
-                                        }
-                                    }
-                                    if (!registrado) {
-                                        ///registrar el titulo
-                                        console.log('Registrar titulo: ' + tituloministerio.valor)
-                                    }
-                                }
-
-                            }
-                            return res.json({
-                                success: true,
-                                listado: listatitulosministerio
-                            });
-                        }
-                    }
-                    else {
-                        return res.json({
-                            success: true,
-                            listado: []
-                        });
-                    }
-
+        var fechadetalle = objpersona.usufechanac.split('/');
+        var personamatriz = {};
+        var nacionalidad = await new Promise(resolve => { verificacionregistro('nacionalidad', 'nac_nombre', objpersona.nacionalidad, (err, valor) => { resolve(valor); }) });
+        var genero = await new Promise(resolve => { verificacionregistro('genero', 'gen_nombre', objpersona.genero, (err, valor) => { resolve(valor); }) });
+        var estadocivil = await new Promise(resolve => { centralizada.obtenerregistroempiezaconunvalor('estadoCivil', 'eci_nombre', objpersona.estadocivil, (err, valor) => { resolve(valor); }) });
+        var provincia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('provincia', 'pro_nombre', objpersona.provinciareside, (err, valor) => { resolve(valor); }) });
+        var sexo = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('sexo', 'sex_nombre', objpersona.sexo, (err, valor) => { resolve(valor); }) });
+        var etnia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('etnia', 'etn_nombre', objpersona.autoidentificacion.substring(0, 3), (err, valor) => { resolve(valor); }) });
+        var ciudad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('ciudad', 'ciu_nombre', objpersona.cantonreside, (err, valor) => { resolve(valor); }) });
+        var parroquia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('parroquia', 'prq_nombre', objpersona.parroquiareside.split(',')[0], (err, valor) => { resolve(valor); }) });
+        var listaapellidos = objpersona.apellidos.split(' ');
+        var primerApellido = "";
+        var segundoApellido = "";
+        if (listaapellidos.length > 0) {
+            if (listaapellidos.length == 1) {
+                primerApellido = listaapellidos[0];
+            }
+            else {
+                primerApellido = listaapellidos[0];
+                for (var i = 1; i < listaapellidos.length; i++) {
+                    segundoApellido = segundoApellido + listaapellidos[i];
                 }
-                else {
-                    ///no posee registros de instrucción formal en la base de datos centralizada
-                    var listatitulosministerio = await new Promise(resolve => { serviciodinardaptitulobachiller(documentopersonal[0].pid_valor, (err, valor) => { resolve(valor); }) });
-                    if (listatitulosministerio != null) {
-                        if (listatitulosministerio.length > 0) {
-                            var registrado = false;
-                            for (tituloministerio of listatitulosministerio) {
-                                if (tituloministerio.campo == 'codigoRefrendacion') {
-                                    for (instformal of objinstruccionformal) {
-                                        if (tituloministerio.valor == instformal.ifo_registro) {
-                                            registrado = true;
-                                            console.log('Registrado: ' + tituloministerio.valor)
-                                        }
-                                    }
-                                    if (!registrado) {
-                                        ///registrar el titulo
-                                        console.log('Registrar titulo: ' + tituloministerio.valor)
-                                    }
-                                }
-
-                            }
-                            return res.json({
-                                success: true,
-                                listado: listatitulosministerio
-                            });
-                        }
+            }
+        }
+        personamatriz = {
+            per_nombres: objpersona.nombres,
+            per_primerapellido: primerApellido,
+            per_segundoapellido: segundoApellido,
+            per_fechanacimiento: fechadetalle[2] + '-' + fechadetalle[1] + '-' + fechadetalle[0],
+            per_email: "",
+            per_emailAlternativo: "",
+            per_telefonoCelular: "",
+            per_telefonoCasa: "",
+            tsa_id: 1,
+            etn_id: etnia[0].etn_id,
+            eci_id: estadocivil[0].eci_id,
+            gen_id: genero.gen_id,
+            per_creadopor: 0,
+            per_fechacreacion: formatDate(new Date()),
+            per_modificadopor: 0,
+            per_fechamodificacion: formatDate(new Date()),
+            lugarprocedencia_id: parroquia[0].prq_id,
+            sex_id: sexo[0].sex_id,
+            per_procedencia: provincia[0].pro_id + '|' + ciudad[0].ciu_id + '|' + parroquia[0].prq_id,
+            per_conyuge: "",
+            per_idconyuge: "",
+            per_cedula: objpersona.identificacion,
+            admision: true,
+            carnetconadis:objpersona.carnetconadis,
+            tipodiscapacidad:objpersona.tipodiscapacidad,
+            porcentajediscapacidad:objpersona.porcentajediscapacidad
+        }        
+        var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
+        if (personacentralizada == null) {
+            console.log('registrar los datos lista en null')
+            var registrarpersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personamatriz, (err, valor) => { resolve(valor); }) });
+            if (registrarpersona) {
+                var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personamatriz.per_nombres, personamatriz.per_primerapellido, personamatriz.per_segundoapellido, personamatriz.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
+                if (persona.length > 0) {
+                    var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonal(personamatriz.per_cedula, persona[0].per_id, (err, valor) => { resolve(valor); }) });
+                    if (documentopersonalreg) {
+                        console.log('Documento personal registrado')
                     }
-                    else {
-                        return res.json({
-                            success: true,
-                            mensaje: 'No posee registros de títulos en el ministerio de educación',
-                            listado: []
-                        });
+                    var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, nacionalidad.nac_requiereVisaTrabajo, nacionalidad.nac_id, (err, valor) => { resolve(valor); }) });
+                    if (ingresoNacionalidad) {
+                        console.log('Registro ingresado correctamente')
+                    }
+                }
+            }
+        }
+        else {
+            if (personacentralizada.length == 0) {
+                console.log('registrar los datos lista vacia')
+                var registrarpersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personamatriz, (err, valor) => { resolve(valor); }) });
+                if (registrarpersona) {
+                    var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personamatriz.per_nombres, personamatriz.per_primerapellido, personamatriz.per_segundoapellido, personamatriz.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
+                    if (persona.length > 0) {
+                        var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonal(personamatriz.per_cedula, persona[0].per_id, (err, valor) => { resolve(valor); }) });
+                        if (documentopersonalreg) {
+                            console.log('Documento personal registrado')
+                        }
+                        var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, nacionalidad.nac_requiereVisaTrabajo, nacionalidad.nac_id, (err, valor) => { resolve(valor); }) });
+                        if (ingresoNacionalidad) {
+                            console.log('Registro ingresado correctamente')
+                        }
                     }
                 }
             }
             else {
-                return res.json({
-                    success: true,
-                    mensaje: 'No existen registros de instrucción formal de la persona',
-                    listado: []
-                });
+                console.log('modificar los datos registrados')
+                var actualizarpersona = await new Promise(resolve => { centralizada.modificarpersonacondatosmatriz(personamatriz, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                if (actualizarpersona) {
+                    console.log('Datos de la persona actualizados correctamente')
+                }
+
+
+            }
+        }
+        personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
+        return res.json({
+            success: true,
+            listado: personacentralizada
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false,
+            mensaje: 'Error: ' + err
+        });
+    }
+});
+router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
+    const idpersona = req.params.idpersona;
+    let listacodigos = [];
+    var listatitulosdinardap = [];
+    var listatitulosregistrar = [];
+    try {
+        var documentopersonal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('documentoPersonal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
+        if (documentopersonal != null) {
+            var titulosdinardap = await new Promise(resolve => { serviciodinardapminEducacion(documentopersonal[0].pid_valor, (err, valor) => { resolve(valor); }) });
+            var titulosdinardapsenescyt = await new Promise(resolve => { serviciodinardapsenescyt(documentopersonal[0].pid_valor, (err, valor) => { resolve(valor); }) });
+            if (titulosdinardap != null) {
+                if (titulosdinardapsenescyt != null) {
+                    for (titulo of titulosdinardap) {
+                        listatitulosdinardap.push(titulo);
+                    }
+                    for (titulosenescyt of titulosdinardapsenescyt) {
+                        listatitulosdinardap.push(titulosenescyt)
+                    }
+                }
+                else {
+                    listatitulosdinardap = titulosdinardap;
+                }
+            }
+            else {
+                if (titulosdinardapsenescyt != null) {
+                    listatitulosdinardap = titulosdinardapsenescyt;
+                }
+            }
+            var objinstruccionformal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('instruccionFormal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
+            if (objinstruccionformal != null) {
+                if (objinstruccionformal.length > 0) {
+                    for (titulodinard of listatitulosdinardap) {
+                        var registrado = false;
+                        for (tituloregcentral of objinstruccionformal) {
+                            if (tituloregcentral.ifo_registro == titulodinard.codigorefrendacion) {
+                                registrado = true;
+                            }
+                        }
+                        if (!registrado) {
+                            listatitulosregistrar.push(titulodinard)
+                        }
+                    }
+                    if (listatitulosregistrar.length > 0) {
+                        /////registra los titulos en la centralizada}
+                        let titulosregistrados = [];
+                        for (tituloregistrar of listatitulosregistrar) {
+                            var registrotablainstruccion = await new Promise(resolve => { registrartitulocentralizada(tituloregistrar, idpersona, (err, valor) => { resolve(valor); }) });
+                            if (registrotablainstruccion != null) {
+                                titulosregistrados.push(registrotablainstruccion[0])
+                                console.log('Titulo Registrado')
+                            }
+                        }
+                    }
+                    else {
+                        return res.json({
+                            success: true,
+                            mensaje: 'registros centralizada',
+                            listado: objinstruccionformal
+                        });
+                    }
+                }
+                else {
+                    if (listatitulosdinardap.length == 0) {
+                        ///// registrar los titulos en la centralizada
+                    } else {
+                        return res.json({
+                            success: true,
+                            mensaje: 'No existen títulos registrados de la persona en la Dinardap ni en la base centralizada',
+                            listado: []
+                        });
+                    }
+
+                }
+            }
+            else {
+                if (listatitulosdinardap.length == 0) {
+                    return res.json({
+                        success: true,
+                        mensaje: 'No existen títulos registrados de la persona en la Dinardap ni en la base centralizada',
+                        listado: []
+                    });
+                }
             }
         }
         else {
             return res.json({
                 success: true,
-                mensaje: 'No existen registros de la persona en la centralizada',
+                mensaje: 'La persona no posee información en la base de datos centralizada',
                 listado: []
             });
         }
@@ -705,12 +783,27 @@ router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
         });
     }
 });
-
-
+//////FUNCIONES
+async function obtenerdiasdeactualizacion(callback) {
+    try {
+        let listado = [];
+        var numdias = await new Promise(resolve => { centralizada.obtenerdiasdeconfiguracion((err, valor) => { resolve(valor); }) });
+        if (numdias.length > 0) {
+            listado.push(numdias[0].valor);
+        }
+        else {
+            return callback("X");
+        }
+        return callback(listado);
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        console.log('Error: ' + err)
+        return callback(false);
+    }
+}
 function padTo2Digits(num) {
     return num.toString().padStart(2, '0');
 }
-
 function formatDate(date) {
     return (
         [
@@ -726,40 +819,285 @@ function formatDate(date) {
         ].join(':')
     );
 }
-
-async function serviciodinardaptitulobachiller(cedula, callback) {
+function formatofechasinhora(date) {
+    return (
+        [
+            date.getFullYear(),
+            padTo2Digits(date.getMonth() + 1),
+            padTo2Digits(date.getDate()),
+        ].join('-')
+    );
+}
+async function serviciodinardapminEducacion(cedulapersona, callback) {
+    let listado = [];
     try {
-        let listado = [];
+        let registroministerio = {};
+        var cedula = "";
+        var nombre = "";
+        var institucion = "";
+        var titulo = "";
+        var especialidad = "";
+        var codigorefrendacion = 1;
+        var fechagrado = 1;
+        var nivel = 2;
         var url = urlAcademico.urlwsdl;
         var Username = urlAcademico.usuariodinardap;
         var Password = urlAcademico.clavedinardap;
         var codigopaquete = urlAcademico.codigoPaqMinEducacion;
-        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedula };
+        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedulapersona };
         soap.createClient(url, async function (err, client) {
             if (!err) {
                 client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
                 client.getFichaGeneral(args, async function (err, result) {
                     if (err) {
-                        console.log('Error: ' + err)
+                        console.log('Error servicio: ' + codigopaquete + err)
                         callback(null);
                     }
                     else {
                         var jsonString = JSON.stringify(result.return);
                         var objjson = JSON.parse(jsonString);
                         let listaregistrosdinardap = objjson.instituciones[0].datosPrincipales.registros;
+
                         for (registro of listaregistrosdinardap) {
-                            listado.push(registro);
+                            if (registro.campo == 'cedula') {
+                                cedula = registro.valor;
+                            }
+                            if (registro.campo == 'nombre') {
+                                nombre = registro.valor;
+                            }
+                            if (registro.campo == 'institucion') {
+                                institucion = registro.valor;
+                            }
+                            if (registro.campo == 'titulo') {
+                                titulo = registro.valor;
+                            }
+                            if (registro.campo == 'espcialidad') {
+                                especialidad = registro.valor;
+                            }
+                            if (registro.campo == 'codigoRefrendacion') {
+                                codigorefrendacion = registro.valor;
+                            }
+                            if (registro.campo == 'fechaGrado') {
+                                fechagrado = registro.valor;
+                            }
                         }
-                        callback(null, listado);
+                        registroministerio = {
+                            cedula: cedula,
+                            nombre: nombre,
+                            institucion: institucion,
+                            titulo: titulo,
+                            especialidad: especialidad,
+                            codigorefrendacion: codigorefrendacion,
+                            fechagrado: fechagrado,
+                            nivel: 2
+                        }
+                        listado.push(registroministerio)
+                    }
+                    return callback(null, listado)
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo dinardap' + err)
+            }
+        });
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+async function serviciodinardapsenescyt(cedulapersona, callback) {
+    try {
+        let listado = [];
+        let registroministerio = {};
+        var cedula = "";
+        var nombre = "";
+        var institucion = "";
+        var titulo = "";
+        var especialidad = "";
+        var codigorefrendacion = 1;
+        var fechagrado = 1;
+        var nivel = 2;
+        var url = urlAcademico.urlwsdl;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoPaqSenescyt;
+        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedulapersona };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.getFichaGeneral(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error servicio: ' + codigopaquete + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.return);
+                        var objjson = JSON.parse(jsonString);
+                        let listaregistrosdinardap = objjson.instituciones[0].detalle.items;
+                        for (registro of listaregistrosdinardap) {
+                            let listacamposporregistro = registro.registros;
+                            for (campos of listacamposporregistro) {
+                                if (campos.campo == 'fechaRegistro') {
+                                    fechagrado = campos.valor;
+                                }
+                                if (campos.campo == 'ies') {
+                                    institucion = campos.valor;
+                                }
+                                if (campos.campo == 'nombreTitulo') {
+                                    titulo = campos.valor;
+                                }
+                                if (campos.campo == 'numeroRegistro') {
+                                    codigorefrendacion = campos.valor;
+                                }
+                            }
+                            if (registro.nombre.includes('Técnico Superior')) {
+                                nivel = 6;
+                            } else {
+                                if (registro.nombre.includes('Posgrado')) {
+                                    nivel = 4;
+                                }
+                                else {
+                                    nivel = 3;
+                                }
+                            }
+                            registroministerio = {
+                                cedula: cedulapersona,
+                                nombre: nombre,
+                                institucion: institucion,
+                                titulo: titulo,
+                                especialidad: especialidad,
+                                codigorefrendacion: codigorefrendacion,
+                                fechagrado: fechagrado,
+                                nivel: nivel
+                            }
+                            listado.push(registroministerio)
+                        }
+                        return callback(null, listado);
                     }
                 });
             } else {
                 callback(null);
-                console.log('Error consumo dinardap - Ministerio de Educación: ' + err)
+                console.log('Error consumo dinardap: ' + err)
             }
-
+        });
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+async function registrartitulocentralizada(objtitulodinardap, per_id, callback) {
+    try {
+        var titulos = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('titulo', 'tit_nombre', objtitulodinardap.titulo + ' ' + objtitulodinardap.especialidad, (err, valor) => { resolve(valor); }) });
+        if (titulos == null) {
+            //registrar titulo en la base de datos
+            var registrotitulo = await new Promise(resolve => { centralizada.ingresotitulo(objtitulodinardap.titulo, objtitulodinardap.nivel, (err, valor) => { resolve(valor); }) });
+            if (registrotitulo) {
+                var titulos = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('titulo', 'tit_nombre', objtitulodinardap.titulo + ' ' + objtitulodinardap.especialidad, (err, valor) => { resolve(valor); }) });
+            }
+            else {
+                console.log('Error en el registro del titulo en la centralizada')
+                return callback(null)
+            }
         }
-        );
+        var instituciones = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('institucion', 'ins_nombre', objtitulodinardap.institucion, (err, valor) => { resolve(valor); }) });
+        if (instituciones == null) {
+            //registrar institución en la base de datos
+            var registroinstitucion = await new Promise(resolve => { centralizada.ingresoinstitucion(objtitulodinardap.institucion, (err, valor) => { resolve(valor); }) });
+            if (registroinstitucion) {
+                var instituciones = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('institucion', 'ins_nombre', objtitulodinardap.institucion, (err, valor) => { resolve(valor); }) });
+            }
+            else {
+                console.log('Error en el registro de la institución en la centralizada')
+                return callback(null)
+            }
+        }
+        var titulosacademicos = await new Promise(resolve => { centralizada.obtenertituloacademicodadoidinstitucionytitulo(instituciones[0].ins_id, titulos[0].tit_id, (err, valor) => { resolve(valor); }) });
+        if (titulosacademicos == null) {
+            // registrar titulo academico en la base de datos
+            var registrartituloacademico = await new Promise(resolve => { centralizada.ingresoTituloAcademico(titulos[0].tit_id, instituciones[0].ins_id, (err, valor) => { resolve(valor); }) });
+            if (registrartituloacademico) {
+                console.log('Registro exitoso en la tabla titulo academico')
+                var titulosacademicos = await new Promise(resolve => { centralizada.obtenertituloacademicodadoidinstitucionytitulo(instituciones[0].ins_id, titulos[0].tit_id, (err, valor) => { resolve(valor); }) });
+            }
+            else {
+                console.log('Error en el registro de la tabla tituloAcademico')
+                return callback(null)
+            }
+        }
+        var instruccionFormal = await new Promise(resolve => { centralizada.obtenerinstruccionformaldadoidpersonaynumregistro(per_id, objtitulodinardap.codigorefrendacion, (err, valor) => { resolve(valor); }) });
+        if (instruccionFormal == null) {
+            var fechadinardap = new Date(objtitulodinardap.fechagrado);
+            var fecharegistro = formatofechasinhora(fechadinardap);
+            var registroinstruccionformal = await new Promise(resolve => { centralizada.ingresoInstruccionFormal(per_id, titulosacademicos[0].tac_id, 0, objtitulodinardap.codigorefrendacion, fecharegistro, (err, valor) => { resolve(valor); }) });
+            if (registroinstruccionformal) {
+                console.log('Registro exitoso en la tabla instrucción formal')
+                instruccionFormal = await new Promise(resolve => { centralizada.obtenerinstruccionformaldadoidpersonaynumregistro(per_id, objtitulodinardap.codigorefrendacion, (err, valor) => { resolve(valor); }) });
+                return callback(null, instruccionFormal[0])
+            }
+            else {
+                console.log('Error: no se han registrado datos en la tabla instrucción formal')
+                return callback(null)
+            }
+        }
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+async function verificacionregistro(tabla, nombrecampo, valor, callback) {
+    try {
+        var objetobase = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo(tabla, nombrecampo, valor, (err, valor) => { resolve(valor); }) });
+        if (objetobase != null) {
+            if (objetobase.length > 0) {
+                return callback(null, objetobase[0])
+            }
+            else {
+                if (tabla == 'nacionalidad') {
+                    var ingresonacionalidad = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'nac_nombre', 'nac_requiereVisaTrabajo', valor, false, (err, valor) => { resolve(valor); }) });
+                    if (ingresonacionalidad) {
+                        var objnacionalidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('nacionalidad', 'nac_nombre', valor, (err, valor) => { resolve(valor); }) });
+                        return callback(null, objnacionalidad[0])
+                    }
+                }
+                else {
+                    if (tabla == 'genero') {
+                        let text = valor;
+                        let codgenero = text.substring(0, 3);
+                        var ingresogenero = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'gen_codigo', 'gen_nombre', codgenero, valor, (err, valor) => { resolve(valor); }) });
+                        if (ingresogenero) {
+                            var objgenero = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('genero', 'gen_nombre', valor, (err, valor) => { resolve(valor); }) });
+                            return callback(null, objgenero[0])
+                        }
+                    }
+                    else {
+                        return callback(null)
+                    }
+                }
+            }
+        }
+        else {
+            if (tabla == 'nacionalidad') {
+                var ingresonacionalidad = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'nac_nombre', 'nac_requiereVisaTrabajo', valor, false, (err, valor) => { resolve(valor); }) });
+                if (ingresonacionalidad) {
+                    var objnacionalidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('nacionalidad', 'nac_nombre', nacionalidadp, (err, valor) => { resolve(valor); }) });
+                    return callback(null, objnacionalidad[0]);
+                }
+            }
+            else {
+                if (tabla == 'genero') {
+                    let text = valor;
+                    let codgenero = text.substring(0, 3);
+                    var ingresogenero = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'gen_codigo', 'gen_nombre', codgenero, valor, (err, valor) => { resolve(valor); }) });
+                    if (ingresogenero) {
+                        var objgenero = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('genero', 'gen_nombre', valor, (err, valor) => { resolve(valor); }) });
+                        return callback(null, objgenero[0])
+                    }
+                }
+                else {
+                    return callback(null)
+                }
+            }
+        }
     } catch (err) {
         console.error('Fallo en la Consulta', err.stack)
         return callback(null);

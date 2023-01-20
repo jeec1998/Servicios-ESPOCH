@@ -634,7 +634,7 @@ router.post('/registrarpersona', async (req, res) => {
 
         }
         var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
-        if ((personacentralizada == null) && (personacentralizada.length == 0)) {
+        if ((personacentralizada == null) || (personacentralizada.length == 0)) {
             console.log('registrar los datos lista en null o vacia')
             var registrarpersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personamatriz, (err, valor) => { resolve(valor); }) });
             if (registrarpersona) {
@@ -654,13 +654,14 @@ router.post('/registrarpersona', async (req, res) => {
         }
         else {
             console.log('modificar los datos registrados')
+            console.log(personacentralizada)
             var actualizarpersona = await new Promise(resolve => { centralizada.modificarpersonacondatosmatriz(personamatriz, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
             if (actualizarpersona) {
                 console.log('Datos de la persona actualizados correctamente')
             }
             if (blndiscapacidad) {
                 var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
-                if ((carnetdiscregistrado != null) && (carnetdiscregistrado.length > 0)) {
+                if ((carnetdiscregistrado != null) || (carnetdiscregistrado.length > 0)) {
                     var discapacidadregistrada = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('discapacidad', 'cdi_id', carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
                     if ((discapacidadregistrada != null) && (discapacidadregistrada.length > 0)) {
                         discapacidadregistrada.dis_valor = personamatriz.porcentajediscapacidad;

@@ -789,6 +789,9 @@ router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
                         listado: []
                     });
                 }
+                else {
+                    ///registrar titulos dinardap
+                }
             }
         }
         else {
@@ -796,6 +799,30 @@ router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
                 success: true,
                 mensaje: 'La persona no posee información en la base de datos centralizada',
                 listado: []
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/objetopersonalizadodadoid/:perid', async (req, res) => {
+    const perid = req.params.perid;
+    try {
+        var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadadoid(perid, (err, valor) => { resolve(valor); }) });
+        if ((personapersonalizada != null) || (personapersonalizada.length > 0)) {
+            return res.json({
+                success: true,
+                listado: personapersonalizada
+            });
+        }
+        else {
+            return res.json({
+                success: false,
+                mensaje: 'No existen registros en la base de datos'
             });
         }
     } catch (err) {

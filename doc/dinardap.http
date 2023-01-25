@@ -45,3 +45,7 @@ GET http://localhost:4000/rutaCentral/obtenerparroquiadadoid/7
 
 ###consumo de una nacionalidad dado el id
 GET http://localhost:4000/rutaCentral/obtenernacionalidaddadoid/3
+
+
+###consumo personalizado de datos de la persona en la centralizada dado el perid
+GET http://localhost:4000/rutaCentral/objetopersonalizadodadoid/26691

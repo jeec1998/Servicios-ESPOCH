@@ -8,7 +8,8 @@
     "start": "pm2 start ./bin/www",
     "stop": "pm2 stop ./bin/www",
     "dev": "nodemon centralsw.js",
-    "pro": "npm i --prod && pm2 restar academicoServicios.js"
+    "prodinit":"pull origin main && npm i --prod && sudo pm2 start centralsw.js --name centralsw && sudo pm2 save",
+    "prod": "pull origin main && npm i --prod && sudo pm2 restart centralsw.js --name centralsw && sudo pm2 save"
   },
   "dependencies": {
     "base64-stream": "1.0.0",

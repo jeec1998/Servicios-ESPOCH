@@ -2,7 +2,7 @@
 ### numero de CI la persona
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
-GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
+GET http://localhost:4000/rutadinardap/obtenerpersona/0600930226
 
 ###consumo de nacionalidades
 GET http://localhost:4000/rutaCentral/listanacionalidades
@@ -11,7 +11,7 @@ GET http://localhost:4000/rutaCentral/listanacionalidades
 GET http://localhost:4000/rutaCentral/listagenero
 
 ###consumo personalizado de datos de la persona en la centralizada
-GET http://localhost:4000/rutaCentral/objpersonalizado/0603520768
+GET http://localhost:4000/rutaCentral/objpersonalizado/0605714997
 
 ###consumo de paises
 GET http://localhost:4000/rutaCentral/listapais

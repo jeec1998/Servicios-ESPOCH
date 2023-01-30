@@ -359,7 +359,8 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                         dir_calleprincipal: calleprincipal,
                                         dir_numcasa: numerocasa,
                                         per_nacionalidad: idnacionalidad,
-                                        nac_reqvisa: blnvisatrabajo
+                                        nac_reqvisa: blnvisatrabajo,
+                                        admision:false
                                     }
 
                                 }

@@ -649,16 +649,19 @@ router.post('/registrarpersona', async (req, res) => {
                     if (ingresoNacionalidad) {
                         console.log('Registro ingresado correctamente')
                     }
-
                 }
             }
         }
         else {
             console.log('modificar los datos registrados')
             console.log(personacentralizada)
+            personacentralizada[0].admision = true;
             var actualizarpersona = await new Promise(resolve => { centralizada.modificarpersonacondatosmatriz(personamatriz, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
             if (actualizarpersona) {
-                console.log('Datos de la persona actualizados correctamente')
+                var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(nacionalidad, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                if (actualizanacionalidad) {
+                    console.log('Datos de la persona actualizados correctamente')
+                }
             }
             if (blndiscapacidad) {
                 var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });

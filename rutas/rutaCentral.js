@@ -304,7 +304,6 @@ router.get('/listaciudadesdadoidprovincia/:idprovincia', async (req, res) => {
     const idprovincia = req.params.idprovincia;
     try {
         var ciudades = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('ciudad', 'pro_id', idprovincia, (err, valor) => { resolve(valor); }) });
-        console.log(ciudades)
         if (ciudades.length > 0) {
             return res.json({
                 success: true,
@@ -587,7 +586,6 @@ router.post('/registrarpersona', async (req, res) => {
         var listaapellidos = objpersona.apellidos.split(' ');
         var primerApellido = "";
         var segundoApellido = "";
-        console.log(sexo)
         if (listaapellidos.length > 0) {
             if (listaapellidos.length == 1) {
                 primerApellido = listaapellidos[0];
@@ -636,7 +634,6 @@ router.post('/registrarpersona', async (req, res) => {
         }
         var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
         if ((personacentralizada == null) || (personacentralizada.length == 0)) {
-            console.log('registrar los datos lista en null o vacia')
             var registrarpersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personamatriz, (err, valor) => { resolve(valor); }) });
             if (registrarpersona) {
                 var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personamatriz.per_nombres, personamatriz.per_primerapellido, personamatriz.per_segundoapellido, personamatriz.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
@@ -654,7 +651,6 @@ router.post('/registrarpersona', async (req, res) => {
         }
         else {
             console.log('modificar los datos registrados')
-            console.log(personacentralizada)
             personacentralizada[0].admision = true;
             var actualizarpersona = await new Promise(resolve => { centralizada.modificarpersonacondatosmatriz(personamatriz, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
             if (actualizarpersona) {

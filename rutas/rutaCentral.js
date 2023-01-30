@@ -580,13 +580,14 @@ router.post('/registrarpersona', async (req, res) => {
         var genero = await new Promise(resolve => { verificacionregistro('genero', 'gen_nombre', objpersona.genero, 0, 0, (err, valor) => { resolve(valor); }) });
         var estadocivil = await new Promise(resolve => { centralizada.obtenerregistroempiezaconunvalor('estadoCivil', 'eci_nombre', objpersona.estadocivil, (err, valor) => { resolve(valor); }) });
         var provincia = await new Promise(resolve => { verificacionregistro('provincia', 'pro_nombre', objpersona.provinciareside, 0, 0, (err, valor) => { resolve(valor); }) });
-        var sexo = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('sexo', 'sex_nombre', objpersona.sexo, (err, valor) => { resolve(valor); }) });
+        var sexo = await new Promise(resolve => { verificacionregistro('sexo', 'sex_nombre', objpersona.sexo, 0, 0, (err, valor) => { resolve(valor); }) });
         var etnia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('etnia', 'etn_nombre', objpersona.autoidentificacion.substring(0, 3), (err, valor) => { resolve(valor); }) });
         var ciudad = await new Promise(resolve => { verificacionregistro('ciudad', 'ciu_nombre', objpersona.cantonreside, provincia.pro_id, 0, (err, valor) => { resolve(valor); }) });
         var parroquia = await new Promise(resolve => { verificacionregistro('parroquia', 'prq_nombre', objpersona.parroquiareside, provincia.pro_id, ciudad.ciu_id, (err, valor) => { resolve(valor); }) });
         var listaapellidos = objpersona.apellidos.split(' ');
         var primerApellido = "";
         var segundoApellido = "";
+        console.log(sexo)
         if (listaapellidos.length > 0) {
             if (listaapellidos.length == 1) {
                 primerApellido = listaapellidos[0];
@@ -616,7 +617,7 @@ router.post('/registrarpersona', async (req, res) => {
             per_modificadopor: 0,
             per_fechamodificacion: formatDate(new Date()),
             lugarprocedencia_id: parroquia.prq_id,
-            sex_id: sexo[0].sex_id,
+            sex_id: sexo.sex_id,
             per_procedencia: provincia.pro_id + '|' + ciudad.ciu_id + '|' + parroquia.prq_id,
             per_conyuge: "",
             per_idconyuge: "",
@@ -1142,7 +1143,16 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
                                 }
                             }
                             else {
-                                return callback(null)
+                                if (tabla == 'sexo') {
+                                    var ingresosexo = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'sex_codigo', 'sex_nombre', valor.substring(0, 3), valor, (err, valor) => { resolve(valor); }) });
+                                    if (ingresosexo) {
+                                        var objsexo = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('sexo', 'sex_nombre', valor, (err, valor) => { resolve(valor); }) });
+                                        return callback(null, objsexo[0])
+                                    }
+                                }
+                                else {
+                                    return callback(null)
+                                }
                             }
                         }
                     }

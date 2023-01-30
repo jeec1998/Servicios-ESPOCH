@@ -214,7 +214,8 @@ module.exports.obtenerdatosdadonombredelatablayelcampo = function (nombretabla, 
 module.exports.obtenerregistrodadonombre = function (nombretabla, nombrecampo, nombre, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t." + nombrecampo + "='" + nombre + "'"
+    sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t." + nombrecampo + " ilike '" + nombre + "'"
+    console.log(sentencia)
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -667,12 +668,32 @@ module.exports.ingresotitulo = function (titulonombre, nivelacademico, callback)
             client.end()
         })
 }
+
+module.exports.ingresosexo = function (valor, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "INSERT INTO central.\"sexo\" (sex_nombre) "
+        + "VALUES('" + valor + "');";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
+            client.end()
+        })
+}
+
 module.exports.ingresotablacon2campos = function (nombretabla, campo1, campo2, valor1, valor2, callback) {
     var client = new Client(db)
     var sentencia;
     sentencia = "INSERT INTO central.\"" + nombretabla + "\" (\"" + campo1 + "\",\"" + campo2 + "\") "
         + "VALUES('" + valor1 + "', '" + valor2 + "');";
-    client.connect()
+    console.log(sentencia)
+        client.connect()
     client.query(sentencia)
         .then(response => {
             callback(null, true);

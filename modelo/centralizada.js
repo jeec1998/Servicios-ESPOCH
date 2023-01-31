@@ -215,7 +215,6 @@ module.exports.obtenerregistrodadonombre = function (nombretabla, nombrecampo, n
     var client = new Client(db)
     var sentencia;
     sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t." + nombrecampo + " ilike '" + nombre + "'"
-    console.log(sentencia)
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -357,8 +356,8 @@ module.exports.actualizarpersona = function (nombretabla, campocentralizada, val
 module.exports.ingresoPersonaCentralizada = function (objPersona, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "INSERT INTO central.persona (per_nombres, \"per_primerApellido\", \"per_segundoApellido\", \"per_fechaNacimiento\", tsa_id, etn_id, eci_id, gen_id, \"per_creadoPor\", \"per_fechaCreacion\", \"per_modificadoPor\", \"per_fechaModificacion\", lugarprocedencia_id,sex_id, per_procedencia, per_conyuge, per_idconyuge, admision) "
-        + "VALUES('" + objPersona.per_nombres + "', '" + objPersona.per_primerapellido + "' , '" + objPersona.per_segundoapellido + "', '" + objPersona.per_fechanacimiento + "', " + objPersona.tsa_id + "," + objPersona.etn_id + "," + objPersona.eci_id + "," + objPersona.gen_id + "," + objPersona.per_creadopor + ",'" + objPersona.per_fechacreacion + "'," + objPersona.per_modificadopor + ",'" + objPersona.per_fechamodificacion + "'," + objPersona.lugarprocedencia_id + "," + objPersona.sex_id + ",'" + objPersona.per_procedencia + "','" + objPersona.per_conyuge + "','" + objPersona.per_idconyuge + "','" + objPersona.admision + "');";
+    sentencia = "INSERT INTO central.persona (per_nombres, \"per_primerApellido\", \"per_segundoApellido\", \"per_fechaNacimiento\", tsa_id, etn_id, eci_id, gen_id, \"per_creadoPor\", \"per_fechaCreacion\", \"per_modificadoPor\", \"per_fechaModificacion\", lugarprocedencia_id,sex_id, per_procedencia, per_conyuge, per_idconyuge, admision, per_telefonoCelular, per_telefonoCasa) "
+        + "VALUES('" + objPersona.per_nombres + "', '" + objPersona.per_primerapellido + "' , '" + objPersona.per_segundoapellido + "', '" + objPersona.per_fechanacimiento + "', " + objPersona.tsa_id + "," + objPersona.etn_id + "," + objPersona.eci_id + "," + objPersona.gen_id + "," + objPersona.per_creadopor + ",'" + objPersona.per_fechacreacion + "'," + objPersona.per_modificadopor + ",'" + objPersona.per_fechamodificacion + "'," + objPersona.lugarprocedencia_id + "," + objPersona.sex_id + ",'" + objPersona.per_procedencia + "','" + objPersona.per_conyuge + "','" + objPersona.per_idconyuge + "','" + objPersona.admision + "','','');";
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -692,7 +691,6 @@ module.exports.ingresotablacon2campos = function (nombretabla, campo1, campo2, v
     var sentencia;
     sentencia = "INSERT INTO central.\"" + nombretabla + "\" (\"" + campo1 + "\",\"" + campo2 + "\") "
         + "VALUES('" + valor1 + "', '" + valor2 + "');";
-    console.log(sentencia)
         client.connect()
     client.query(sentencia)
         .then(response => {

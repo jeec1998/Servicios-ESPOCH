@@ -592,6 +592,24 @@ router.post('/registrarpersona', async (req, res) => {
         if (etnia == '') {
             etnia = 8;
         }
+        if (estadocivil == null) {
+            estadocivil = 1
+        }
+        else {
+            estadocivil = estadocivil[0].eci_id
+        }
+        if (genero == null) {
+            genero = 3
+        }
+        else {
+            genero = genero.gen_id
+        }
+        if (sexo == null) {
+            sexo = 4
+        } else {
+            sexo = sexo.sex_id
+        }
+
         var ciudad = await new Promise(resolve => { verificacionregistro('ciudad', 'ciu_nombre', objpersona.cantonreside, provincia.pro_id, 0, (err, valor) => { resolve(valor); }) });
         var parroquia = await new Promise(resolve => { verificacionregistro('parroquia', 'prq_nombre', objpersona.parroquiareside, provincia.pro_id, ciudad.ciu_id, (err, valor) => { resolve(valor); }) });
         var listaapellidos = objpersona.apellidos.split(' ');
@@ -619,14 +637,14 @@ router.post('/registrarpersona', async (req, res) => {
             per_telefonoCasa: "",
             tsa_id: 1,
             etn_id: etnia,
-            eci_id: estadocivil[0].eci_id,
-            gen_id: genero.gen_id,
+            eci_id: estadocivil,
+            gen_id: genero,
             per_creadopor: 0,
             per_fechacreacion: formatDate(new Date()),
             per_modificadopor: 0,
             per_fechamodificacion: formatDate(new Date()),
             lugarprocedencia_id: parroquia.prq_id,
-            sex_id: sexo.sex_id,
+            sex_id: sexo,
             per_procedencia: provincia.pro_id + '|' + ciudad.ciu_id + '|' + parroquia.prq_id,
             per_conyuge: "",
             per_idconyuge: "",
@@ -1139,7 +1157,28 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
     try {
         var objetobase = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo(tabla, nombrecampo, valor, (err, valor) => { resolve(valor); }) });
         if ((objetobase != null) && (objetobase.length > 0)) {
-            return callback(null, objetobase[0])
+            if (objetobase.length > 1) {
+                if (tabla == 'genero') {
+                    return callback(null, objetobase[2])
+                }
+                else {
+                    if (tabla == 'sexo') {
+                        return callback(null, objetobase[3])
+                    }
+                    else {
+                        if ((tabla == 'nacionalidad') && (objetobase.length > 10)) {
+                            return callback(null, objetobase[1])
+                        }
+                        else {
+                            return callback(null, objetobase[0])
+                        }
+                    }
+                }
+            }
+            else {
+                return callback(null, objetobase[0])
+            }
+
         }
         else {
             if (tabla == 'nacionalidad') {

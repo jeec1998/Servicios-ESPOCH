@@ -706,7 +706,7 @@ module.exports.ingresotablacon2campos = function (nombretabla, campo1, campo2, v
 module.exports.obtenerregistroempiezaconunvalor = function (nombretabla, nombrecampo, nombre, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t.\"" + nombrecampo + "\" like '" + nombre + "%' "
+    sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t.\"" + nombrecampo + "\" ilike '" + nombre + "%' "
     client.connect()
     client.query(sentencia)
         .then(response => {

@@ -686,6 +686,7 @@ router.post('/registrarpersona', async (req, res) => {
                 }
             }
         }
+        personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
         if (blndiscapacidad) {
             var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
             if ((carnetdiscregistrado != null) && (carnetdiscregistrado.length > 0)) {

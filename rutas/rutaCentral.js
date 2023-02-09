@@ -775,7 +775,14 @@ router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
     var listatitulosregistrar = [];
     try {
         var documentopersonal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('documentoPersonal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
-        if (documentopersonal != null) {
+        if ((documentopersonal == null) || (documentopersonal.length == 0)) {
+            return res.json({
+                success: true,
+                mensaje: 'La persona no posee información en la base de datos centralizada',
+                listado: []
+            });
+        }
+        else {
             var titulosdinardap = await new Promise(resolve => { serviciodinardapminEducacion(documentopersonal[0].pid_valor, (err, valor) => { resolve(valor); }) });
             var titulosdinardapsenescyt = await new Promise(resolve => { serviciodinardapsenescyt(documentopersonal[0].pid_valor, (err, valor) => { resolve(valor); }) });
             if (titulosdinardap != null) {
@@ -797,50 +804,36 @@ router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
                 }
             }
             var objinstruccionformal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('instruccionFormal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
-            if (objinstruccionformal != null) {
-                if (objinstruccionformal.length > 0) {
-                    for (titulodinard of listatitulosdinardap) {
-                        var registrado = false;
-                        for (tituloregcentral of objinstruccionformal) {
-                            if (tituloregcentral.ifo_registro == titulodinard.codigorefrendacion) {
-                                registrado = true;
-                            }
-                        }
-                        if (!registrado) {
-                            listatitulosregistrar.push(titulodinard)
+            if ((objinstruccionformal != null) || (objinstruccionformal.length > 0)) {
+                for (titulodinard of listatitulosdinardap) {
+                    var registrado = false;
+                    for (tituloregcentral of objinstruccionformal) {
+                        if (tituloregcentral.ifo_registro == titulodinard.codigorefrendacion) {
+                            registrado = true;
                         }
                     }
-                    if (listatitulosregistrar.length > 0) {
-                        /////registra los titulos en la centralizada}
-                        let titulosregistrados = [];
-                        for (tituloregistrar of listatitulosregistrar) {
-                            var registrotablainstruccion = await new Promise(resolve => { registrartitulocentralizada(tituloregistrar, idpersona, (err, valor) => { resolve(valor); }) });
-                            if (registrotablainstruccion != null) {
-                                titulosregistrados.push(registrotablainstruccion[0])
-                                console.log('Titulo Registrado')
-                            }
-                        }
-                    }
-                    else {
-                        return res.json({
-                            success: true,
-                            mensaje: 'registros centralizada',
-                            listado: objinstruccionformal
-                        });
+                    if (!registrado) {
+                        listatitulosregistrar.push(titulodinard)
                     }
                 }
-                else {
-                    if (listatitulosdinardap.length == 0) {
-                        ///// registrar los titulos en la centralizada
-                    } else {
-                        return res.json({
-                            success: true,
-                            mensaje: 'No existen títulos registrados de la persona en la Dinardap ni en la base centralizada',
-                            listado: []
-                        });
+                if (listatitulosregistrar.length > 0) {
+                    /////registra los titulos en la centralizada}
+                    let titulosregistrados = [];
+                    for (tituloregistrar of listatitulosregistrar) {
+                        var registrotablainstruccion = await new Promise(resolve => { registrartitulocentralizada(tituloregistrar, idpersona, (err, valor) => { resolve(valor); }) });
+                        console.log(registrotablainstruccion)
+                        if (registrotablainstruccion != null) {
+                            titulosregistrados.push(registrotablainstruccion[0])
+                            console.log('Titulo Registrado')
+                        }
                     }
-
+                    objinstruccionformal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('instruccionFormal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
                 }
+                return res.json({
+                    success: true,
+                    mensaje: 'registros centralizada',
+                    listado: objinstruccionformal
+                });
             }
             else {
                 if (listatitulosdinardap.length == 0) {
@@ -851,16 +844,22 @@ router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
                     });
                 }
                 else {
-                    ///registrar titulos dinardap
+                    for (tituloregistrar of listatitulosdinardap) {
+                        var registrotablainstruccion = await new Promise(resolve => { registrartitulocentralizada(tituloregistrar, idpersona, (err, valor) => { resolve(valor); }) });
+                        console.log(registrotablainstruccion)
+                        if (registrotablainstruccion != null) {
+                            titulosregistrados.push(registrotablainstruccion[0])
+                            console.log('Titulo Registrado')
+                        }
+                    }
+                    objinstruccionformal = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('instruccionFormal', 'per_id', idpersona, (err, valor) => { resolve(valor); }) });
+                    return res.json({
+                        success: true,
+                        mensaje: 'datos de la dinardap registrados en la centralizada',
+                        listado: objinstruccionformal
+                    });
                 }
             }
-        }
-        else {
-            return res.json({
-                success: true,
-                mensaje: 'La persona no posee información en la base de datos centralizada',
-                listado: []
-            });
         }
     } catch (err) {
         console.log('Error: ' + err)
@@ -1097,9 +1096,15 @@ async function serviciodinardapsenescyt(cedulapersona, callback) {
 }
 async function registrartitulocentralizada(objtitulodinardap, per_id, callback) {
     try {
-        var titulos = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('titulo', 'tit_nombre', objtitulodinardap.titulo + ' ' + objtitulodinardap.especialidad, (err, valor) => { resolve(valor); }) });
-        if (titulos == null) {
-            //registrar titulo en la base de datos
+
+        if (objtitulodinardap.especialidad.length > 0) {
+            var titulos = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('titulo', 'tit_nombre', objtitulodinardap.titulo + ' ' + objtitulodinardap.especialidad, (err, valor) => { resolve(valor); }) });
+        }
+        else {
+            var titulos = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('titulo', 'tit_nombre', objtitulodinardap.titulo, (err, valor) => { resolve(valor); }) });
+        }
+        if ((titulos == null) || (titulo.length == 0)) {
+            console.log('registrar titulo en la base de datos')
             var registrotitulo = await new Promise(resolve => { centralizada.ingresotitulo(objtitulodinardap.titulo, objtitulodinardap.nivel, (err, valor) => { resolve(valor); }) });
             if (registrotitulo) {
                 var titulos = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('titulo', 'tit_nombre', objtitulodinardap.titulo + ' ' + objtitulodinardap.especialidad, (err, valor) => { resolve(valor); }) });
@@ -1110,8 +1115,8 @@ async function registrartitulocentralizada(objtitulodinardap, per_id, callback) 
             }
         }
         var instituciones = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('institucion', 'ins_nombre', objtitulodinardap.institucion, (err, valor) => { resolve(valor); }) });
-        if (instituciones == null) {
-            //registrar institución en la base de datos
+        if ((instituciones == null) || (instituciones.length == 0)) {
+            console.log('registrar institución en la base de datos')
             var registroinstitucion = await new Promise(resolve => { centralizada.ingresoinstitucion(objtitulodinardap.institucion, (err, valor) => { resolve(valor); }) });
             if (registroinstitucion) {
                 var instituciones = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('institucion', 'ins_nombre', objtitulodinardap.institucion, (err, valor) => { resolve(valor); }) });
@@ -1122,8 +1127,8 @@ async function registrartitulocentralizada(objtitulodinardap, per_id, callback) 
             }
         }
         var titulosacademicos = await new Promise(resolve => { centralizada.obtenertituloacademicodadoidinstitucionytitulo(instituciones[0].ins_id, titulos[0].tit_id, (err, valor) => { resolve(valor); }) });
-        if (titulosacademicos == null) {
-            // registrar titulo academico en la base de datos
+        if ((titulosacademicos == null) || (titulosacademicos.length == 0)) {
+            console.log('registrar titulo academico en la base de datos')
             var registrartituloacademico = await new Promise(resolve => { centralizada.ingresoTituloAcademico(titulos[0].tit_id, instituciones[0].ins_id, (err, valor) => { resolve(valor); }) });
             if (registrartituloacademico) {
                 console.log('Registro exitoso en la tabla titulo academico')
@@ -1135,7 +1140,7 @@ async function registrartitulocentralizada(objtitulodinardap, per_id, callback) 
             }
         }
         var instruccionFormal = await new Promise(resolve => { centralizada.obtenerinstruccionformaldadoidpersonaynumregistro(per_id, objtitulodinardap.codigorefrendacion, (err, valor) => { resolve(valor); }) });
-        if (instruccionFormal == null) {
+        if ((instruccionFormal == null) || (instruccionFormal.length == 0)) {
             var fechadinardap = new Date(objtitulodinardap.fechagrado);
             var fecharegistro = formatofechasinhora(fechadinardap);
             var registroinstruccionformal = await new Promise(resolve => { centralizada.ingresoInstruccionFormal(per_id, titulosacademicos[0].tac_id, 0, objtitulodinardap.codigorefrendacion, fecharegistro, (err, valor) => { resolve(valor); }) });

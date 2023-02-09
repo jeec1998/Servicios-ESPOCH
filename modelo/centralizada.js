@@ -250,7 +250,7 @@ module.exports.obtenerdatosdadonombredelatablayelcampoparainteger = function (no
 module.exports.obtenerinstruccionformaldadoidpersonaynumregistro = function (idpersona, numregistro, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "SELECT * FROM central.\"instruccionFormal\" i WHERE i.per_id = " + idpersona + " and i.ifo_registro=" + numregistro + ""
+    sentencia = "SELECT * FROM central.\"instruccionFormal\" i WHERE i.per_id = " + idpersona + " and i.ifo_registro='" + numregistro + "'"
     client.connect()
     client.query(sentencia)
         .then(response => {

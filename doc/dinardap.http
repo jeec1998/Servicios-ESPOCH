@@ -2,7 +2,8 @@
 ### numero de CI la persona
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
-GET http://localhost:4000/rutadinardap/obtenerpersona/0600930226
+//GET http://localhost:4000/rutadinardap/obtenerpersona/0603520768
+GET http://localhost:4000/rutadinardap/obtenerpersona/0604073940
 
 ###consumo de nacionalidades
 GET http://localhost:4000/rutaCentral/listanacionalidades
@@ -32,7 +33,7 @@ GET http://localhost:4000/rutaCentral/listaparroquiasdadoidciudad/16
 GET http://localhost:4000/rutaCentral/listaetnias
 
 ###verificar instruccion formal de la persona
-GET http://localhost:4000/rutaCentral/verificarinstruccionformal/113915
+GET http://localhost:4000/rutadinardap/verificarinstruccionformal/86621
 
 ###consumo de una provincia dado el id
 GET http://localhost:4000/rutaCentral/obtenerprovinciadadoid/7
@@ -49,3 +50,9 @@ GET http://localhost:4000/rutaCentral/obtenernacionalidaddadoid/3
 
 ###consumo personalizado de datos de la persona en la centralizada dado el perid
 GET http://localhost:4000/rutaCentral/objetopersonalizadodadoid/26691
+
+###proceso de nombres especiales
+GET http://localhost:4000/rutadinardap/procesonombres/DE LA PAZ FALCONI MARCELA DEL ROCIO
+
+###buscarregistrospornombresyfechadenacimiento
+GET http://localhost:4000/rutadinardap/buscarRegistros/0603520768

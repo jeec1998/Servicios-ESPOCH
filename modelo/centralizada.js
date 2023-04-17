@@ -121,6 +121,23 @@ module.exports.obtenerpersonadadonombresapellidosyfechanacimiento = function (no
             client.end()
         })
 }
+module.exports.obtenerpersonadadonombresyfechanacimientodinardap = function (nombres, fechaNacimiento, callback) {
+    var client = new Client(db)
+    var sentencia;
+    /////modificar para devolver datos completos
+    sentencia = "SELECT * FROM central.persona p WHERE trim(concat(p.\"per_primerApellido\",' ',p.\"per_segundoApellido\",' ',p.per_nombres))='" + nombres + "' and p.\"per_fechaNacimiento\"= '" + fechaNacimiento + "' "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
+            client.end()
+        })
+}
 module.exports.obtenerdocumentopormail = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
@@ -691,7 +708,7 @@ module.exports.ingresotablacon2campos = function (nombretabla, campo1, campo2, v
     var sentencia;
     sentencia = "INSERT INTO central.\"" + nombretabla + "\" (\"" + campo1 + "\",\"" + campo2 + "\") "
         + "VALUES('" + valor1 + "', '" + valor2 + "');";
-        client.connect()
+    client.connect()
     client.query(sentencia)
         .then(response => {
             callback(null, true);

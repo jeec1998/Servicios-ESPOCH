@@ -661,6 +661,7 @@ router.post('/registrarpersona', async (req, res) => {
         }
         var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
         if ((personacentralizada == null) || (personacentralizada.length == 0)) {
+            //console.log(personamatriz)
             var registrarpersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personamatriz, (err, valor) => { resolve(valor); }) });
             if (registrarpersona) {
                 var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personamatriz.per_nombres, personamatriz.per_primerapellido, personamatriz.per_segundoapellido, personamatriz.per_fechanacimiento, (err, valor) => { resolve(valor); }) });

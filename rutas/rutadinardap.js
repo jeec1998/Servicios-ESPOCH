@@ -373,6 +373,7 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                     else {
                         var jsonString = JSON.stringify(result.return);
                         var objjson = JSON.parse(jsonString);
+                        console.log(objjson)
                         let listacamposdinardap = objjson.instituciones[0].datosPrincipales.registros;
                         for (campos of listacamposdinardap) {
                             listado.push(campos);
@@ -401,6 +402,7 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                             }
                                         }
                                     }
+                                    console.log('actualizacampos')
                                     if (cont > 0) {
                                         personas[0] = personaactualizada;
                                         callback(null, personaactualizada);

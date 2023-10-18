@@ -704,9 +704,9 @@ async function obtenerdependenciadadoid(perid1, callback) {
         var fs = require('fs');
         var http = require('http');
         var https = require('https');
-        var cer1 = pathimage.join(__dirname, '../Certificados/espoch_sectigo_key_2019.key')
-        var cer2 = pathimage.join(__dirname, '../Certificados/STAR_espoch_edu_ec.crt')
-        var cer3 = pathimage.join(__dirname, '../Certificados/STAR_espoch_edu_ec.crt')
+        var cer1 = pathimage.join(__dirname, '../Certificados/espoch_edu_ec.key')
+        var cer2 = pathimage.join(__dirname, '../Certificados/espoch_edu_ec_2023.crt')
+        var cer3 = pathimage.join(__dirname, '../Certificados/espoch_edu_ec_ca.crt')
         Request.get({
             rejectUnauthorized: false,
             url: nomenclatura.urldependenciadadoid + perid1,

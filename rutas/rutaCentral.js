@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const centralizada = require('./../modelo/centralizada');
 const urlAcademico = require('../config/urlAcademico');
 const soap = require('soap');
+const pathimage = require('path');
 const { Console } = require('console');
 
 router.get('/diaactualizacion/', (req, res) => {
@@ -792,6 +793,97 @@ router.get('/objetopersonalizadodadoid/:perid', async (req, res) => {
         });
     }
 });
+
+router.get('/actualizacionAdmisionCentral/:idperiodo', async (req, res) => {
+    const idperiodo = req.params.idperiodo;
+    try {
+        const url = "https://apinivelacionevaluacion.espoch.edu.ec/api_m4/m_admision/aspirante_sede/list_periodo/" + idperiodo;
+        var https = require('https');
+        var Request = require("request");
+        var fs = require('fs');
+        var https = require('https');
+        var cer1 = pathimage.join(__dirname, '../Certificados/espoch_edu_ec.key')
+        var cer2 = pathimage.join(__dirname, '../Certificados/espoch_edu_ec_2023.crt')
+        var cer3 = pathimage.join(__dirname, '../Certificados/espoch_edu_ec_ca.crt')
+        Request.get({
+            rejectUnauthorized: false,
+            url: url,
+            json: true
+        }, async function (error, response, body) {
+            var listainscritos = [];
+            listainscritos = body;
+            var cont = 0;
+            if ((listainscritos.length > 0) && (listainscritos != null)) {
+                for (inscrito of listainscritos) {
+                    var cedulapostulante = inscrito.perId.perCedula
+                    //console.log(cedulapostulante)
+                    var datosenescyt = await new Promise(resolve => { informacionsenescyt(cedulapostulante, (valor) => { resolve(valor); }) });
+                    if (datosenescyt.identificacion != null) {
+                        var nacionalidad = await new Promise(resolve => { verificacionregistro('nacionalidad', 'nac_nombre', datosenescyt.nacionalidad, 0, 0, (err, valor) => { resolve(valor); }) });
+                        var genero = await new Promise(resolve => { verificacionregistro('genero', 'gen_nombre', datosenescyt.genero, 0, 0, (err, valor) => { resolve(valor); }) });
+                        var estadocivil = await new Promise(resolve => { centralizada.obtenerregistroempiezaconunvalor('estadoCivil', 'eci_nombre', datosenescyt.estadoCivil, (err, valor) => { resolve(valor); }) });
+                        var etnia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('etnia', 'etn_nombre', datosenescyt.autoidentificacion.substring(0, 3), (err, valor) => { resolve(valor); }) });
+                        var idnacionalidad = 1
+                        var idgenero = 3
+                        var idestadocivil = 1
+                        var idetnia = 8
+                        if (nacionalidad.nac_id != null) {
+                            idnacionalidad = nacionalidad.nac_id
+                        }
+                        if (genero.gen_id != null) {
+                            idgenero = genero.gen_id
+                        }
+                        if ((estadocivil.length > 0) && (estadocivil != null)) {
+                            idestadocivil = estadocivil[0].eci_id
+                        }
+                        if ((etnia.length > 0) && (etnia != null)) {
+                            idetnia = etnia[0].etn_id
+                        }
+                        var fecha = formatDate(new Date())
+                        //console.log("idnacionalidad: " + idnacionalidad + " idgenero: " + idgenero + " idestadocivil: " + idestadocivil + " idetnia: " + idetnia)
+                        var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedulapostulante, (err, valor) => { resolve(valor); }) });
+                        if ((personacentralizada != null) && (personacentralizada.length > 0)) {
+                            var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersonaadmision(idgenero, idestadocivil, fecha, idetnia, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                            if (actualizacionpersona) {
+                                var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(nacionalidad, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                                console.log("Actualizado correctamente el registro de la persona: " + cedulapostulante)
+                                cont = cont + 1
+                            }
+                        }
+                        else {
+                            console.log("No se encontro informacion en la centralizada del postulante: " + cedulapostulante)
+                        }
+                    }
+                    else {
+                        console.log("No se encontro informacion del senescyt del postulante: " + cedulapostulante)
+                    }
+                }
+                console.log("Se realizaron " + cont + " actualizaciones")
+                res.json(
+                    {
+                        success: true,
+                        mensaje: "Se realizaron " + cont + "actualizaciones"
+                    }
+                )
+            }
+            else {
+                console.log("No se encontro informacion de inscritos en admisiones")
+                res.json(
+                    {
+                        success: false,
+                        mensaje: "No se encontro informacion de inscritos en admisiones"
+                    }
+                )
+            }
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
 //////FUNCIONES
 async function obtenerdiasdeactualizacion(callback) {
     try {
@@ -915,6 +1007,34 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
                 }
             }
         }
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+
+async function informacionsenescyt(cedula, callback) {
+    try {
+        let parametros = {};
+        parametros = {
+            strCedula: cedula
+        }
+        var request = require('request');
+        request.post({
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Accept": "*/*",
+                "Connection": "keep-alive",
+                "Accept-Encoding": "gzip, deflate, br"
+            },
+            url: urlAcademico.urladmisionsenescyt + "registro_unico/verificar_cedula",
+            body: parametros,
+            rejectUnauthorized: false,
+            json: true
+        }, function (error, response, body) {
+            return callback(body);
+        });
+
     } catch (err) {
         console.error('Fallo en la Consulta', err.stack)
         return callback(null);

@@ -261,6 +261,49 @@ router.get('/verificarinstruccionformal/:idpersona', async (req, res) => {
         });
     }
 });
+
+router.get('/buscarTituloBachiller/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    try {
+        var listatitulos = [];
+
+
+        var titulosdinardap = await new Promise(resolve => { serviciodinardapminEducacion(cedula, (err, valor) => { resolve(valor); }) });
+        if (titulosdinardap != null) {
+            listatitulos = titulosdinardap;
+        }
+        return res.json({
+            success: true,
+            listado: listatitulos
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/verificartitulotercernivel/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var listatitulos = [];
+    try {
+        var titulosdinardap = await new Promise(resolve => { verificartitulostercernivel(cedula, (err, valor) => { resolve(valor); }) });
+        if (titulosdinardap != null) {
+            listatitulos = titulosdinardap;
+        }
+        return res.json({
+            success: true,
+            listado: listatitulos
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
 //////FUNCIONES
 async function actualizarcamposportipo(idtipo, campocentralizada, tablacentralizada, valor, objpersona, callback) {
     try {
@@ -985,6 +1028,25 @@ async function registrartitulocentralizada(objtitulodinardap, per_id, callback) 
     } catch (err) {
         console.error('Fallo en la Consulta', err.stack)
         return callback(null);
+    }
+}
+
+async function verificartitulostercernivel(cedula, callback) {
+    var listatitulosdinardap = [];
+    var datos = {};
+    try {
+        console.log('Buscar dinardap pid_Valor: ' + cedula)
+        var titulosdinardapsenescyt = await new Promise(resolve => { serviciodinardapsenescyt(cedula, (err, valor) => { resolve(valor); }) });
+        if (titulosdinardapsenescyt != null) {
+            for (titulosenescyt of titulosdinardapsenescyt) {
+                console.log(titulosenescyt.nivel)
+                if (titulosenescyt.nivel == 3) { datos = titulosenescyt }
+            }
+            callback(null, datos)
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return callback(null)
     }
 }
 module.exports = router;

@@ -54,9 +54,9 @@ app.get('/', (req, res) => {
 });
 
 var options = {
-    key: fs.readFileSync('Certificados/espoch_sectigo_key_2019.key'),
-    cert: fs.readFileSync('Certificados/STAR_espoch_edu_ec.crt'),
-    ca: fs.readFileSync('Certificados/STAR_espoch_edu_ec.crt')
+    key: fs.readFileSync('Certificados/espoch_edu_ec.key'),
+    cert: fs.readFileSync('Certificados/espoch_edu_ec_2023.crt'),
+    ca: fs.readFileSync('Certificados/espoch_edu_ec_ca.crt')
 };
 
 app.use(function (req, resp, next) {

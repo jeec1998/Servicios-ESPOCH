@@ -495,6 +495,30 @@ module.exports.modificardatospersona = function (email, telefonocelular, telefon
         callback(null, 0);
     }
 }
+
+/////ACTUALIZAR PERSONA ADMISION CON LOS DATOS DEL SENESCYT
+module.exports.modificardatospersonaadmision = function (idgenero, idestadocivil, fechamodificacion, idetnia, idpersona, callback) {
+    try {
+        var client = new Client(db)
+        var sentencia;
+        sentencia = "UPDATE central.persona SET \"per_fechaModificacion\"='" + fechamodificacion + "', \"etn_id\"='" + idetnia + "', \"eci_id\"='" + idestadocivil + "', \"gen_id\"='" + idgenero + "', \"admision\"='true' WHERE per_id=" + idpersona + ""
+        client.connect()
+        client.query(sentencia)
+            .then(response => {
+                client.end()
+                callback(null, true);
+            })
+            .catch(err => {
+                console.error('Fallo en la Consulta modificar persona', err.stack);
+                client.end()
+                callback(null, false);
+            })
+    }
+    catch (error) {
+        reject(error);
+        callback(null, 0);
+    }
+}
 ///////ACTUALIZAR PERSONA EN LA CENTRALIZADA
 module.exports.modificarpersonacondatosmatriz = function (objpersonamatriz, idpersonacentral, callback) {
     try {
@@ -736,7 +760,7 @@ module.exports.obtenerregistroempiezaconunvalor = function (nombretabla, nombrec
             client.end()
         })
 
-
+e
 }
 module.exports.actualizardiscapacidad = function (porcentaje, tipodiscapacidad, idcarnet, callback) {
     var client = new Client(db)

@@ -56,3 +56,6 @@ GET http://localhost:4000/rutadinardap/procesonombres/DE LA PAZ FALCONI MARCELA 
 
 ###buscarregistrospornombresyfechadenacimiento
 GET http://localhost:4000/rutadinardap/buscarRegistros/0603520768
+
+###validar registro de titulos de tercer nivel
+GET http://localhost:4000/rutadinardap/verificartitulotercernivel/0603520768

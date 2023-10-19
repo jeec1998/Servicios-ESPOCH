@@ -287,13 +287,15 @@ router.get('/buscarTituloBachiller/:cedula', async (req, res) => {
 router.get('/verificartitulotercernivel/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     var listatitulos = [];
+    var success=false;
     try {
         var titulosdinardap = await new Promise(resolve => { verificartitulostercernivel(cedula, (err, valor) => { resolve(valor); }) });
         if (titulosdinardap != null) {
             listatitulos = titulosdinardap;
+            success=true;
         }
         return res.json({
-            success: true,
+            success: success,
             listado: listatitulos
         });
     } catch (err) {
@@ -1044,6 +1046,7 @@ async function verificartitulostercernivel(cedula, callback) {
             }
             callback(null, datos)
         }
+        else { callback(null, null) }
     } catch (err) {
         console.log('Error: ' + err)
         return callback(null)

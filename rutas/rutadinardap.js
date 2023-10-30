@@ -1078,7 +1078,6 @@ async function verificartitulostercernivel(cedula, callback) {
 async function consumoinformacionregcivil(cedula, callback) {
     try {
         let listado = [];
-        var parametros="";
         var url = UrlAcademico.urlwsdl;
         var Username = urlAcademico.usuariodinardap;
         var Password = urlAcademico.clavedinardap;
@@ -1095,10 +1094,12 @@ async function consumoinformacionregcivil(cedula, callback) {
                     else {
                         var jsonString = JSON.stringify(result.return);
                         var objjson = JSON.parse(jsonString);
-                        console.log(objjson)
                         let listacamposdinardap = objjson.instituciones[0].datosPrincipales.registros;
                         for (campos of listacamposdinardap) {
-                            parametros=campos.campo+" : "+campos.valor                            
+                            var name = campos.campo;
+                            var answer = campos.valor;
+                            var parametros = {};
+                            parametros[name] = answer;
                             listado.push(parametros);
                         }
                         callback(null, listado);

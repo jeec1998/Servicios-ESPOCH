@@ -287,16 +287,38 @@ router.get('/buscarTituloBachiller/:cedula', async (req, res) => {
 router.get('/verificartitulotercernivel/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     var listatitulos = [];
-    var success=false;
+    var success = false;
     try {
         var titulosdinardap = await new Promise(resolve => { verificartitulostercernivel(cedula, (err, valor) => { resolve(valor); }) });
         if (titulosdinardap != null) {
             listatitulos = titulosdinardap;
-            success=true;
+            success = true;
         }
         return res.json({
             success: success,
             listado: listatitulos
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/informacionregistrocivil/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var informacionreg = [];
+    var success = false;
+    try {
+        var datosregistro = await new Promise(resolve => { consumoinformacionregcivil(cedula, (err, valor) => { resolve(valor); }) });
+        if (datosregistro != null) {
+            informacionreg = datosregistro;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: informacionreg
         });
     } catch (err) {
         console.log('Error: ' + err)
@@ -1050,6 +1072,47 @@ async function verificartitulostercernivel(cedula, callback) {
     } catch (err) {
         console.log('Error: ' + err)
         return callback(null)
+    }
+}
+
+async function consumoinformacionregcivil(cedula, callback) {
+    try {
+        let listado = [];
+        var parametros="";
+        var url = UrlAcademico.urlwsdl;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoPaq;
+        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedula };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.getFichaGeneral(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.return);
+                        var objjson = JSON.parse(jsonString);
+                        console.log(objjson)
+                        let listacamposdinardap = objjson.instituciones[0].datosPrincipales.registros;
+                        for (campos of listacamposdinardap) {
+                            parametros=campos.campo+" : "+campos.valor                            
+                            listado.push(parametros);
+                        }
+                        callback(null, listado);
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo dinardap: ' + err)
+            }
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
     }
 }
 module.exports = router;

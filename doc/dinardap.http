@@ -58,4 +58,7 @@ GET http://localhost:4000/rutadinardap/procesonombres/DE LA PAZ FALCONI MARCELA 
 GET http://localhost:4000/rutadinardap/buscarRegistros/0603520768
 
 ###validar registro de titulos de tercer nivel
-GET http://localhost:4000/rutadinardap/verificartitulotercernivel/0603520768
+GET http://localhost:4000/rutadinardap/verificartitulotercernivel/0600309272
+
+###obtener informacion del registro civil dado la cedula
+GET http://localhost:8098/rutadinardap/informacionregistrocivil/0650907694

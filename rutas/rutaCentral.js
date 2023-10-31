@@ -794,6 +794,30 @@ router.get('/objetopersonalizadodadoid/:perid', async (req, res) => {
     }
 });
 
+router.get('/objetopersonalizadodadoemail/:email', async (req, res) => {
+    const email = req.params.email;
+    try {
+        var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadadoemail(email, (err, valor) => { resolve(valor); }) });
+        if ((personapersonalizada != null) || (personapersonalizada.length > 0)) {
+            return res.json({
+                success: true,
+                listado: personapersonalizada
+            });
+        }
+        else {
+            return res.json({
+                success: false,
+                mensaje: 'No existen registros en la base de datos'
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
 router.get('/actualizacionAdmisionCentral/:idperiodo', async (req, res) => {
     const idperiodo = req.params.idperiodo;
     try {

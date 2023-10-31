@@ -3,62 +3,65 @@
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0603520768
-GET http://localhost:4000/rutadinardap/obtenerpersona/0601681893
+GET http://localhost:8098/rutadinardap/obtenerpersona/0603520768
 
 ###consumo de nacionalidades
-GET http://localhost:4000/rutaCentral/listanacionalidades
+GET http://localhost:8098/rutaCentral/listanacionalidades
 
 ###consumo de generos
-GET http://localhost:4000/rutaCentral/listagenero
+GET http://localhost:8098/rutaCentral/listagenero
 
 ###consumo personalizado de datos de la persona en la centralizada
-GET http://localhost:4000/rutaCentral/objpersonalizado/0605714997
+GET http://localhost:8098/rutaCentral/objpersonalizado/0605714997
 
 ###consumo de paises
-GET http://localhost:4000/rutaCentral/listapais
+GET http://localhost:8098/rutaCentral/listapais
 
 ###consumo de provincia
 ### numero de ID del país
-GET http://localhost:4000/rutaCentral/listaprovinciadadopais/6
+GET http://localhost:8098/rutaCentral/listaprovinciadadopais/6
 
 ###consumo de ciudades
 ### numero de ID de la provincia
-GET http://localhost:4000/rutaCentral/listaciudadesdadoidprovincia/7
+GET http://localhost:8098/rutaCentral/listaciudadesdadoidprovincia/7
 
 ###consumo de parroquias
 ### numero de ID de la ciudad
-GET http://localhost:4000/rutaCentral/listaparroquiasdadoidciudad/16
+GET http://localhost:8098/rutaCentral/listaparroquiasdadoidciudad/16
 
 ###consumo de etnias
-GET http://localhost:4000/rutaCentral/listaetnias
+GET http://localhost:8098/rutaCentral/listaetnias
 
 ###verificar instruccion formal de la persona
-GET http://localhost:4000/rutadinardap/verificarinstruccionformal/86621
+GET http://localhost:8098/rutadinardap/verificarinstruccionformal/86621
 
 ###consumo de una provincia dado el id
-GET http://localhost:4000/rutaCentral/obtenerprovinciadadoid/7
+GET http://localhost:8098/rutaCentral/obtenerprovinciadadoid/7
 
 ###consumo de una ciudad dado el id
-GET http://localhost:4000/rutaCentral/obtenerciudaddadoid/7
+GET http://localhost:8098/rutaCentral/obtenerciudaddadoid/7
 
 ###consumo de una parroquia dado el id
-GET http://localhost:4000/rutaCentral/obtenerparroquiadadoid/7
+GET http://localhost:8098/rutaCentral/obtenerparroquiadadoid/7
 
 ###consumo de una nacionalidad dado el id
-GET http://localhost:4000/rutaCentral/obtenernacionalidaddadoid/3
+GET http://localhost:8098/rutaCentral/obtenernacionalidaddadoid/3
 
 
 ###consumo personalizado de datos de la persona en la centralizada dado el perid
-GET http://localhost:4000/rutaCentral/objetopersonalizadodadoid/26691
+GET http://localhost:8098/rutaCentral/objetopersonalizadodadoid/26691
 
 ###proceso de nombres especiales
-GET http://localhost:4000/rutadinardap/procesonombres/DE LA PAZ FALCONI MARCELA DEL ROCIO
+GET http://localhost:8098/rutadinardap/procesonombres/DE LA PAZ FALCONI MARCELA DEL ROCIO
 
 ###buscarregistrospornombresyfechadenacimiento
-GET http://localhost:4000/rutadinardap/buscarRegistros/0603520768
+GET http://localhost:8098/rutadinardap/buscarRegistros/0603520768
 
 ###validar registro de titulos de tercer nivel
-GET http://localhost:4000/rutadinardap/verificartitulotercernivel/0600309272
+GET http://localhost:8098/rutadinardap/verificartitulotercernivel/0600309272
 
 ###obtener informacion del registro civil dado la cedula
 GET http://localhost:8098/rutadinardap/informacionregistrocivil/0650907694
+
+###consumo personalizado de datos de la persona en la centralizada dado el email
+GET http://localhost:8098/rutaCentral/objetopersonalizadodadoemail/admisiones@espoch.edu.ec

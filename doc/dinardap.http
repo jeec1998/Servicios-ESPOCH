@@ -3,7 +3,7 @@
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0603520768
-GET http://localhost:8098/rutadinardap/obtenerpersona/0907268866
+GET http://localhost:8098/rutadinardap/obtenerpersona/2450849878
 
 ###consumo de nacionalidades
 GET http://localhost:8098/rutaCentral/listanacionalidades

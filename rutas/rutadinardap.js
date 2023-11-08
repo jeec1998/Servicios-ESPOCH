@@ -74,7 +74,7 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
                         if (personapersonalizada.length > 0) {
                             return res.json({
                                 success: true,
-                                listado: personapersonalizada[0]
+                                listado: personapersonalizada
                             });
                         }
                     }

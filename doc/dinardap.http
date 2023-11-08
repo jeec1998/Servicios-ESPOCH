@@ -3,7 +3,7 @@
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0603520768
-GET http://localhost:8098/rutadinardap/obtenerpersona/0603520768
+GET http://localhost:8098/rutadinardap/obtenerpersona/0601828833
 
 ###consumo de nacionalidades
 GET http://localhost:8098/rutaCentral/listanacionalidades
@@ -52,7 +52,7 @@ GET http://localhost:8098/rutaCentral/obtenernacionalidaddadoid/3
 GET http://localhost:8098/rutaCentral/objetopersonalizadodadoid/26691
 
 ###proceso de nombres especiales
-GET http://localhost:8098/rutadinardap/procesonombres/DE LA PAZ FALCONI MARCELA DEL ROCIO
+GET http://localhost:8098/rutadinardap/procesonombres/DE LA CRUZ GONZALEZ ELOY GUILLERMO
 
 ###buscarregistrospornombresyfechadenacimiento
 GET http://localhost:8098/rutadinardap/buscarRegistros/0603520768

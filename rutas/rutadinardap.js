@@ -170,11 +170,20 @@ router.get('/procesonombres/:nombre', async (req, res) => {
         var cont = 0;
         var contpalabracorta = false;
         if (nombres.length > 0) {
+            /*
             for (var i = 0; i < nombres.length; i++) {
                 if (nombres[i].length <= 3) {
                     contpalabracorta = true
-                    pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
-                    i = i + 1
+                    if (nombres[i + 1].length <= 3) {
+                        contpalabracorta = true
+                        pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1] + ' ' + nombres[i + 2]
+                        i = i + 2
+                    }
+                    else {
+                        pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
+                        i = i + 1
+                    }
+
                 }
                 else {
                     pospalabra[cont] = nombres[i];
@@ -214,11 +223,12 @@ router.get('/procesonombres/:nombre', async (req, res) => {
                 per_primerapellido: primerApellido,
                 per_segundoapellido: segundoApellido,
                 per_nombres: nombrescompletos
-            }
-            console.log('Apellidos y nombres: ' + personacentralizada)
+            }*/
+            var estructuranombres = await new Promise(resolve => { actualizaciondenombrescentral(nombrepersona, (err, valor) => { resolve(valor); }) });
+            console.log('Apellidos y nombres: ' + estructuranombres)
             return res.json({
                 success: true,
-                nombrePersona: personacentralizada
+                nombrePersona: estructuranombres
             });
             /*nombrescompletos = "";
             primerApellido = nombres[0];
@@ -353,33 +363,16 @@ async function actualizarcamposportipo(idtipo, campocentralizada, tablacentraliz
                 break;
             case 2:   // separa la cadena de nombres para los parámetros de la centralizada
                 let listaparametros = [];
-                const nombres = valor.split(" ");
-                if (nombres.length > 0) {
-                    var primerApellido = nombres[0];
-                    listaparametros.push(primerApellido);
-                    var segundoApellido = nombres[1];
-                    listaparametros.push(segundoApellido);
-                    var nombrescompletos = "";
-                    for (var i = 2; i < nombres.length; i++) {
-                        nombrescompletos = nombrescompletos + nombres[i] + " ";
-                    }
-                    listaparametros.push(nombrescompletos);
-                    const camposcentralizadalst = campocentralizada.split(",");
-                    if (camposcentralizadalst.length > 0) {
-                        var cont = 0;
-                        for (var i = 0; i < camposcentralizadalst.length; i++) {
-                            //var actualizacion = await new Promise(resolve => { centralizada.actualizarpersona(tablacentralizada, camposcentralizadalst[i], listaparametros[i], objpersona.per_id, (err, valor) => { resolve(valor); }) });
-                            var actualizacion = centralizada.actualizarpersona(tablacentralizada, camposcentralizadalst[i], listaparametros[i], objpersona.per_id, function (Result) { });
-                            //console.log('Resultado actualizacion en la centralizada: '+actualizacion)
-                            if (actualizacion) {
-                                cont = cont + 1;
-                            }
-                        }
-                        if (cont == camposcentralizadalst.length) {
-                            actualizado = true;
-                            console.log('Nombres y Apellidos actualizados correctamente')
-                        }
-                    }
+                var estructuranombres = await new Promise(resolve => { actualizaciondenombrescentral(valor, (err, valor) => { resolve(valor); }) });
+                if (estructuranombres != null) {
+                    var actualizarregistro = await new Promise(resolve => { centralizada.modificarnombrespersona(estructuranombres.per_primerapellido, estructuranombres.per_segundoapellido, estructuranombres.per_nombres, objpersona.per_id, (err, valor) => { resolve(valor); }) });
+                    if (actualizarregistro)
+                        console.log("Nombres y apellidos de la persona actualizados correctamente")
+                    else
+                        console.log("No se actualizaron los nombres y apellidos de la persona")
+                }
+                else {
+                    console.log("No se actualizaron los nombres y apellidos de la persona")
                 }
                 //lst.push(objpersona);
                 break;
@@ -401,7 +394,8 @@ async function actualizarcamposportipo(idtipo, campocentralizada, tablacentraliz
         }
         if (actualizado) {
             var fechamodificacion = formatDate(new Date())
-            var actualizacionfecha = centralizada.actualizarpersona('persona', 'per_fechaModificacion', fechamodificacion, objpersona.per_id, function (Result) { });
+            var actualizacionfecha = await new Promise(resolve => { centralizada.actualizarpersona('persona', 'per_fechaModificacion', fechamodificacion, objpersona.per_id, (err, valor) => { resolve(valor); }) });
+            console.log(actualizacionfecha)
             if (actualizacionfecha) {
                 console.log('Fecha de modificación de la persona actualizada correctamente')
             }
@@ -440,7 +434,6 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                     else {
                         var jsonString = JSON.stringify(result.return);
                         var objjson = JSON.parse(jsonString);
-                        console.log(objjson)
                         let listacamposdinardap = objjson.instituciones[0].datosPrincipales.registros;
                         for (campos of listacamposdinardap) {
                             listado.push(campos);
@@ -512,49 +505,59 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                         cedulanueva = atr.valor;
                                     }
                                     if (atr.campo == "nombre") {
-                                        const nombres = atr.valor.split(" ");
-                                        if (nombres.length > 0) {
-                                            for (var i = 0; i < nombres.length; i++) {
-                                                if (nombres[i].length <= 3) {
-                                                    contpalabracorta = true
-                                                    pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
-                                                    i = i + 1
-                                                }
-                                                else {
-                                                    pospalabra[cont] = nombres[i];
-                                                }
-                                                cont = cont + 1;
-                                            }
-                                            console.log(pospalabra)
-                                            if (pospalabra.length < 4) {
-                                                if (contpalabracorta) {
-                                                    primerApellido = pospalabra[0]
-                                                    segundoApellido = ''
-                                                    for (var c = 1; c < pospalabra.length; c++) {
-                                                        console.log(pospalabra[c])
-                                                        nombrescompletos = nombrescompletos + pospalabra[c] + ' '
-                                                    }
-                                                }
-                                                else {
-                                                    if (pospalabra.length == 2) {
-                                                        primerApellido = pospalabra[0]
-                                                        segundoApellido = ''
-                                                        nombrescompletos = pospalabra[1]
-                                                    } else {
-                                                        primerApellido = pospalabra[0]
-                                                        segundoApellido = pospalabra[1]
-                                                        nombrescompletos = pospalabra[2]
-                                                    }
-                                                }
-                                            }
-                                            else {
-                                                primerApellido = pospalabra[0]
-                                                segundoApellido = pospalabra[1]
-                                                for (var c = 2; c < pospalabra.length; c++) {
-                                                    nombrescompletos = nombrescompletos + pospalabra[c] + ' '
-                                                }
-                                            }
+                                        const nombres = atr.valor;
+                                        var estructuranombres = await new Promise(resolve => { actualizaciondenombrescentral(nombres, (err, valor) => { resolve(valor); }) });
+                                        if (estructuranombres != null) {
+                                            primerApellido = estructuranombres.per_primerapellido
+                                            segundoApellido = estructuranombres.per_segundoapellido
+                                            nombrescompletos = estructuranombres.per_nombres
                                         }
+                                        else {
+                                            console.log("Error al obtener los nombres y apellidos estructurados")
+                                        }
+                                        /*const nombres = atr.valor.split(" ");
+if (nombres.length > 0) {
+    for (var i = 0; i < nombres.length; i++) {
+        if (nombres[i].length <= 3) {
+            contpalabracorta = true
+            pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
+            i = i + 1
+        }
+        else {
+            pospalabra[cont] = nombres[i];
+        }
+        cont = cont + 1;
+    }
+    console.log(pospalabra)
+    if (pospalabra.length < 4) {
+        if (contpalabracorta) {
+            primerApellido = pospalabra[0]
+            segundoApellido = ''
+            for (var c = 1; c < pospalabra.length; c++) {
+                console.log(pospalabra[c])
+                nombrescompletos = nombrescompletos + pospalabra[c] + ' '
+            }
+        }
+        else {
+            if (pospalabra.length == 2) {
+                primerApellido = pospalabra[0]
+                segundoApellido = ''
+                nombrescompletos = pospalabra[1]
+            } else {
+                primerApellido = pospalabra[0]
+                segundoApellido = pospalabra[1]
+                nombrescompletos = pospalabra[2]
+            }
+        }
+    }
+    else {
+        primerApellido = pospalabra[0]
+        segundoApellido = pospalabra[1]
+        for (var c = 2; c < pospalabra.length; c++) {
+            nombrescompletos = nombrescompletos + pospalabra[c] + ' '
+        }
+    }
+}*/
                                     }
                                     if (atr.campo == "fechaNacimiento") {
                                         fechaNacimiento = atr.valor;
@@ -1116,4 +1119,80 @@ async function consumoinformacionregcivil(cedula, callback) {
         return callback(null);
     }
 }
+
+async function actualizaciondenombrescentral(nombrecompleto, callback) {
+    try {
+        let personacentralizada = {};
+        var nombrescompletos = "";
+        var primerApellido = "";
+        var segundoApellido = "";
+        const nombres = nombrecompleto.split(" ");
+        var pospalabra = [];
+        var cont = 0;
+        var contpalabracorta = false;
+        if (nombres.length > 0) {
+            for (var i = 0; i < nombres.length; i++) {
+                if (nombres[i].length <= 3) {
+                    contpalabracorta = true
+                    if (nombres[i + 1].length <= 3) {
+                        contpalabracorta = true
+                        pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1] + ' ' + nombres[i + 2]
+                        i = i + 2
+                    }
+                    else {
+                        pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
+                        i = i + 1
+                    }
+
+                }
+                else {
+                    pospalabra[cont] = nombres[i];
+                }
+                cont = cont + 1;
+            }
+            if (pospalabra.length < 4) {
+                if (contpalabracorta) {
+                    primerApellido = pospalabra[0]
+                    segundoApellido = ''
+                    for (var c = 1; c < pospalabra.length; c++) {
+                        nombrescompletos = nombrescompletos + pospalabra[c] + ' '
+                    }
+                }
+                else {
+                    if (pospalabra.length == 2) {
+                        primerApellido = pospalabra[0]
+                        segundoApellido = ''
+                        nombrescompletos = pospalabra[1]
+                    } else {
+                        primerApellido = pospalabra[0]
+                        segundoApellido = pospalabra[1]
+                        nombrescompletos = pospalabra[2]
+                    }
+                }
+            }
+            else {
+                primerApellido = pospalabra[0]
+                segundoApellido = pospalabra[1]
+                for (var c = 2; c < pospalabra.length; c++) {
+                    nombrescompletos = nombrescompletos + pospalabra[c] + ' '
+                }
+            }
+            personacentralizada = {
+                per_primerapellido: primerApellido,
+                per_segundoapellido: segundoApellido,
+                per_nombres: nombrescompletos
+            }
+            //var actualizarregistro = await new Promise(resolve => { centralizada.modificarnombrespersona(primerApellido, segundoApellido, nombrescompletos, idpersona, (err, valor) => { resolve(valor); }) });
+            callback(null, personacentralizada)
+        }
+        else {
+            callback(null, null)
+        }
+    }
+    catch (err) {
+        console.log('Error: ' + err)
+        callback(null, null)
+    }
+}
+
 module.exports = router;

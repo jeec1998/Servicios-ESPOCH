@@ -799,3 +799,26 @@ module.exports.actualizardiscapacidad = function (porcentaje, tipodiscapacidad, 
         })
 }
 
+module.exports.modificarnombrespersona = function (primerapellido, segundoapellido, nombrecompleto, idpersona, callback) {
+    try {
+        var client = new Client(db)
+        var sentencia;
+        sentencia = "UPDATE central.persona SET \"per_primerApellido\"='" + primerapellido + "', \"per_segundoApellido\"='" + segundoapellido + "', \"per_nombres\"='" + nombrecompleto + "' WHERE per_id=" + idpersona + ""
+        client.connect()
+        client.query(sentencia)
+            .then(response => {
+                client.end()
+                callback(null, true);
+            })
+            .catch(err => {
+                console.error('Fallo en la Consulta modificar persona', err.stack);
+                client.end()
+                callback(null, false);
+            })
+    }
+    catch (error) {
+        reject(error);
+        callback(null, 0);
+    }
+}
+

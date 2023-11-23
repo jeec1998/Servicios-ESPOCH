@@ -170,72 +170,12 @@ router.get('/procesonombres/:nombre', async (req, res) => {
         var cont = 0;
         var contpalabracorta = false;
         if (nombres.length > 0) {
-            /*
-            for (var i = 0; i < nombres.length; i++) {
-                if (nombres[i].length <= 3) {
-                    contpalabracorta = true
-                    if (nombres[i + 1].length <= 3) {
-                        contpalabracorta = true
-                        pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1] + ' ' + nombres[i + 2]
-                        i = i + 2
-                    }
-                    else {
-                        pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
-                        i = i + 1
-                    }
-
-                }
-                else {
-                    pospalabra[cont] = nombres[i];
-                }
-                cont = cont + 1;
-            }
-            console.log(pospalabra)
-            if (pospalabra.length < 4) {
-                if (contpalabracorta) {
-                    primerApellido = pospalabra[0]
-                    segundoApellido = ''
-                    for (var c = 1; c < pospalabra.length; c++) {
-                        console.log(pospalabra[c])
-                        nombrescompletos = nombrescompletos + pospalabra[c] + ' '
-                    }
-                }
-                else {
-                    if (pospalabra.length == 2) {
-                        primerApellido = pospalabra[0]
-                        segundoApellido = ''
-                        nombrescompletos = pospalabra[1]
-                    } else {
-                        primerApellido = pospalabra[0]
-                        segundoApellido = pospalabra[1]
-                        nombrescompletos = pospalabra[2]
-                    }
-                }
-            }
-            else {
-                primerApellido = pospalabra[0]
-                segundoApellido = pospalabra[1]
-                for (var c = 2; c < pospalabra.length; c++) {
-                    nombrescompletos = nombrescompletos + pospalabra[c] + ' '
-                }
-            }
-            personacentralizada = {
-                per_primerapellido: primerApellido,
-                per_segundoapellido: segundoApellido,
-                per_nombres: nombrescompletos
-            }*/
             var estructuranombres = await new Promise(resolve => { actualizaciondenombrescentral(nombrepersona, (err, valor) => { resolve(valor); }) });
             console.log('Apellidos y nombres: ' + estructuranombres)
             return res.json({
                 success: true,
                 nombrePersona: estructuranombres
             });
-            /*nombrescompletos = "";
-            primerApellido = nombres[0];
-            segundoApellido = nombres[1];
-            for (var i = 2; i < nombres.length; i++) {
-                nombrescompletos = nombrescompletos + nombres[i] + " ";
-            }*/
         }
     }
     catch (err) {

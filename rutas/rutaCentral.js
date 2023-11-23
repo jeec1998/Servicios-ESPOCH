@@ -793,6 +793,34 @@ router.get('/objetopersonalizadodadoid/:perid', async (req, res) => {
         });
     }
 });
+router.get('/actualizarestadopersona/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    try {
+        var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedula, (err, valor) => { resolve(valor); }) });
+        if ((personacentralizada != null) || (personacentralizada.length > 0)) {
+            var actualizacion = await new Promise(resolve => { centralizada.actualizarpersona("persona", "admision", "true", personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+            console.log(actualizacion)
+            if (actualizacion) {
+                personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedula, (err, valor) => { resolve(valor); }) });
+            }
+            return res.json({
+                success: true,
+                persona: personacentralizada[0]
+            });
+        }
+        else {
+            return res.json({
+                success: false,
+                mensaje: 'La persona no se encuentra registrada en la base centralizada'
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
 
 router.get('/objetopersonalizadodadoemail/:email', async (req, res) => {
     const email = req.params.email;

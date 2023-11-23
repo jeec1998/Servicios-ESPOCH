@@ -3,7 +3,7 @@
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0603520768
-GET http://localhost:8098/rutadinardap/obtenerpersona/2450849878
+GET http://localhost:8098/rutadinardap/obtenerpersona/1714708656
 
 ###consumo de nacionalidades
 GET http://localhost:8098/rutaCentral/listanacionalidades
@@ -70,3 +70,6 @@ GET http://localhost:8098/rutadinardap/informacionregistrocivil/0650907694
 
 ###consumo personalizado de datos de la persona en la centralizada dado el email
 GET http://localhost:8098/rutaCentral/objetopersonalizadodadoemail/admisiones@espoch.edu.ec
+
+### Servicio Admisiones - actualizar el estado de la persona dado la cédula
+GET http://localhost:8098/rutaCentral/actualizarestadopersona/0603520768

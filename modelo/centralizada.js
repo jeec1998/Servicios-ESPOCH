@@ -378,6 +378,7 @@ module.exports.actualizarpersona = function (nombretabla, campocentralizada, val
     var client = new Client(db)
     var sentencia;
     sentencia = " UPDATE central." + nombretabla + " SET \"" + campocentralizada + "\"='" + valor + "' WHERE per_id=" + idpersona + "";
+    console.log(sentencia)
     client.connect()
     client.query(sentencia)
         .then(response => {

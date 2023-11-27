@@ -11,7 +11,7 @@ const centralizada = require('../modelo/centralizada');
 const e = require('express');
 
 router.get('/obtenerpersona/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
+    var cedula = req.params.cedula;
     try {
         let listado = [];
         var tipo = 1;
@@ -65,31 +65,62 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
             });
         }
         else {
-            if (cedula.length == 10) {
+            if ((cedula.length == 10) || (cedula.length == 13)) {
+                var registraruc = false;
                 tipo = 2;
-                var registrar = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
-                if (registrar != null) {
-                    var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
-                    if (personapersonalizada != null) {
-                        if (personapersonalizada.length > 0) {
+                if (cedula.length == 13) {
+                    registraruc = true;
+                    cedula = cedula.substring(0, 10);
+                }
+                var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
+                    if (registraruc) {
+                        var ruc = cedula + '001';
+                        var rucreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonalGenerico(ruc, 2, personapersonalizada[0].per_id, true, (err, valor) => { resolve(valor); }) });
+                        if (rucreg) {
+                            personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(ruc, (err, valor) => { resolve(valor); }) });
+                        }
+                        else {
                             return res.json({
-                                success: true,
-                                listado: personapersonalizada
+                                success: false,
+                                mensaje: 'Error al registrar el ruc de la persona'
                             });
                         }
                     }
+                } else {
+                    var registrar = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
+                    if (registrar != null) {
+                        personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                        if (registraruc) {
+                            var ruc = cedula + '001';
+                            var rucreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonalGenerico(ruc, 2, personapersonalizada[0].per_id, true, (err, valor) => { resolve(valor); }) });
+                            if (rucreg) {
+                                personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(ruc, (err, valor) => { resolve(valor); }) });
+                            }
+                            else {
+                                return res.json({
+                                    success: false,
+                                    mensaje: 'Error al registrar el ruc de la persona'
+                                });
+                            }
+                        }
+                    }
+                    else {
+                        return res.json({
+                            success: false,
+                            mensaje: 'No se ha encontrado información en la Dinardap'
+                        });
+                    }
                 }
-                else {
-                    return res.json({
-                        success: false,
-                        mensaje: 'No se ha encontrado información en la Dinardap'
-                    });
-                }
+                return res.json({
+                    success: true,
+                    listado: personapersonalizada
+                });
             }
             else {
                 return res.json({
                     success: false,
-                    mensaje: 'Cédula incorrecta'
+                    mensaje: 'Cédula o Documento incorrecto'
                 });
             }
         }
@@ -455,49 +486,6 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                         else {
                                             console.log("Error al obtener los nombres y apellidos estructurados")
                                         }
-                                        /*const nombres = atr.valor.split(" ");
-if (nombres.length > 0) {
-    for (var i = 0; i < nombres.length; i++) {
-        if (nombres[i].length <= 3) {
-            contpalabracorta = true
-            pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
-            i = i + 1
-        }
-        else {
-            pospalabra[cont] = nombres[i];
-        }
-        cont = cont + 1;
-    }
-    console.log(pospalabra)
-    if (pospalabra.length < 4) {
-        if (contpalabracorta) {
-            primerApellido = pospalabra[0]
-            segundoApellido = ''
-            for (var c = 1; c < pospalabra.length; c++) {
-                console.log(pospalabra[c])
-                nombrescompletos = nombrescompletos + pospalabra[c] + ' '
-            }
-        }
-        else {
-            if (pospalabra.length == 2) {
-                primerApellido = pospalabra[0]
-                segundoApellido = ''
-                nombrescompletos = pospalabra[1]
-            } else {
-                primerApellido = pospalabra[0]
-                segundoApellido = pospalabra[1]
-                nombrescompletos = pospalabra[2]
-            }
-        }
-    }
-    else {
-        primerApellido = pospalabra[0]
-        segundoApellido = pospalabra[1]
-        for (var c = 2; c < pospalabra.length; c++) {
-            nombrescompletos = nombrescompletos + pospalabra[c] + ' '
-        }
-    }
-}*/
                                     }
                                     if (atr.campo == "fechaNacimiento") {
                                         fechaNacimiento = atr.valor;
@@ -700,7 +688,6 @@ async function verificarinstruccionformalpersona(idpersona, callback) {
                 if (cedula.length > 10) {
                     cedula = cedula.substring(0, 10)
                 }
-                console.log('Buscar dinardap pid_Valor: ' + cedula)
                 var titulosdinardap = await new Promise(resolve => { serviciodinardapminEducacion(cedula, (err, valor) => { resolve(valor); }) });
                 var titulosdinardapsenescyt = await new Promise(resolve => { serviciodinardapsenescyt(cedula, (err, valor) => { resolve(valor); }) });
                 if (titulosdinardap != null) {
@@ -880,7 +867,6 @@ async function serviciodinardapsenescyt(cedulapersona, callback) {
                         var jsonString = JSON.stringify(result.return);
                         var objjson = JSON.parse(jsonString);
                         let listaregistrosdinardap = objjson.instituciones[0].detalle.items;
-                        console.log(listaregistrosdinardap)
                         for (registro of listaregistrosdinardap) {
                             let listacamposporregistro = registro.registros;
                             for (campos of listacamposporregistro) {
@@ -1002,7 +988,6 @@ async function verificartitulostercernivel(cedula, callback) {
     var listatitulosdinardap = [];
     var datos = {};
     try {
-        console.log('Buscar dinardap pid_Valor: ' + cedula)
         var titulosdinardapsenescyt = await new Promise(resolve => { serviciodinardapsenescyt(cedula, (err, valor) => { resolve(valor); }) });
         if (titulosdinardapsenescyt != null) {
             for (titulosenescyt of titulosdinardapsenescyt) {

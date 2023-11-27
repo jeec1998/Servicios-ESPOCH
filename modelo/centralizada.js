@@ -378,7 +378,6 @@ module.exports.actualizarpersona = function (nombretabla, campocentralizada, val
     var client = new Client(db)
     var sentencia;
     sentencia = " UPDATE central." + nombretabla + " SET \"" + campocentralizada + "\"='" + valor + "' WHERE per_id=" + idpersona + "";
-    console.log(sentencia)
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -413,6 +412,24 @@ module.exports.ingresoDocumentoPersonal = function (cedula, idpersona, callback)
     var sentencia;
     sentencia = "INSERT INTO central.\"documentoPersonal\" (pid_valor, tdi_id, per_id, pid_activo) "
         + "VALUES('" + cedula + "', '1' , '" + idpersona + "', 'true');";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
+            client.end()
+        })
+}
+
+module.exports.ingresoDocumentoPersonalGenerico = function (valor, idtipodoc, idpersona, estado, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "INSERT INTO central.\"documentoPersonal\" (pid_valor, tdi_id, per_id, pid_activo) "
+        + "VALUES('" + valor + "', '" + idtipodoc + "', '" + idpersona + "', '" + estado + "');";
     client.connect()
     client.query(sentencia)
         .then(response => {

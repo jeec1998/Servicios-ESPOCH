@@ -5,6 +5,7 @@ var os = require('os');
 const { Console } = require('console');
 const { Client } = require('pg')
 
+////servicio utilizado para el proceso de admisiones
 module.exports.obtenerpersonapersonalizado = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;

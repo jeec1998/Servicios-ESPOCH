@@ -793,6 +793,7 @@ router.get('/objetopersonalizadodadoid/:perid', async (req, res) => {
         });
     }
 });
+//////no modificar, servicio utilizado en el proceso de admisiones
 router.get('/actualizarestadopersona/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     try {

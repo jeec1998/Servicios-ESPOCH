@@ -1057,18 +1057,22 @@ async function actualizaciondenombrescentral(nombrecompleto, callback) {
         var contpalabracorta = false;
         if (nombres.length > 0) {
             for (var i = 0; i < nombres.length; i++) {
+                //if ((nombres[i].includes('DE')) || (nombres[i].includes('DEL')) || (nombres[i].includes('EL')) || (nombres[i].includes('LA')) || (nombres[i].includes('LOS')) || (nombres[i].includes('LAS'))) {
                 if (nombres[i].length <= 3) {
-                    contpalabracorta = true
-                    if (nombres[i + 1].length <= 3) {
+                    if ((nombres[i].includes('DE')) || (nombres[i].includes('DEL')) || (nombres[i].includes('EL')) || (nombres[i].includes('LA')) || (nombres[i].includes('LOS')) || (nombres[i].includes('LAS'))) {
                         contpalabracorta = true
-                        pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1] + ' ' + nombres[i + 2]
-                        i = i + 2
+                        if (nombres[i + 1].length <= 3) {
+                            contpalabracorta = true
+                            pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1] + ' ' + nombres[i + 2]
+                            i = i + 2
+                        }
+                        else {
+                            pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
+                            i = i + 1
+                        }
+                    } else {
+                        pospalabra[cont] = nombres[i];
                     }
-                    else {
-                        pospalabra[cont] = nombres[i] + ' ' + nombres[i + 1]
-                        i = i + 1
-                    }
-
                 }
                 else {
                     pospalabra[cont] = nombres[i];

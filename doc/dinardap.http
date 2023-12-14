@@ -3,7 +3,7 @@
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0603520768
-GET http://localhost:8098/rutadinardap/obtenerpersona/0650907694001
+GET http://localhost:8098/rutadinardap/obtenerpersona/0650296841
 
 ###consumo de nacionalidades
 GET http://localhost:8098/rutaCentral/listanacionalidades
@@ -33,7 +33,7 @@ GET http://localhost:8098/rutaCentral/listaparroquiasdadoidciudad/16
 GET http://localhost:8098/rutaCentral/listaetnias
 
 ###verificar instruccion formal de la persona
-GET http://localhost:8098/rutadinardap/verificarinstruccionformal/86621
+GET http://localhost:8098/rutadinardap/verificarinstruccionformal/133175
 
 ###consumo de una provincia dado el id
 GET http://localhost:8098/rutaCentral/obtenerprovinciadadoid/7
@@ -59,6 +59,7 @@ GET http://localhost:8098/rutaCentral/objetopersonalizadodadoid/32721
 //GET http://localhost:8098/rutadinardap/procesonombres/SANTACRUZ DE LA CRUZ NATALY DE LOS ANGELES
 //GET http://localhost:8098/rutadinardap/procesonombres/ORTIZ CUEVAS ANGEL
 GET http://localhost:8098/rutadinardap/procesonombres/MORALES DE LA NUEZ ANTONIO JOSE
+//GET http://localhost:8098/rutadinardap/procesonombres/CEPA RUIZ ANA SOFIA
 
 ###buscarregistrospornombresyfechadenacimiento
 GET http://localhost:8098/rutadinardap/buscarRegistros/0603520768
@@ -70,7 +71,7 @@ GET http://localhost:8098/rutadinardap/verificartitulotercernivel/0600309272
 GET http://localhost:8098/rutadinardap/informacionregistrocivil/0650907694
 
 ###consumo personalizado de datos de la persona en la centralizada dado el email
-GET http://localhost:8098/rutaCentral/objetopersonalizadodadoemail/admisiones@espoch.edu.ec
+GET http://localhost:8098/rutaCentral/objetopersonalizadodadoemail/edison.jarai@espoch.edu.ec
 
 ### Servicio Admisiones - actualizar el estado de la persona dado la cédula
 GET http://localhost:8098/rutaCentral/actualizarestadopersona/060352076856

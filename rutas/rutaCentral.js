@@ -473,10 +473,16 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
                         }
                     }
                     else {
-                        return res.json({
-                            success: false,
-                            mensaje: 'No existen registros de provincia de la persona'
-                        });
+                        var pais = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('pais', 'pai_id', myArray[0], (err, valor) => { resolve(valor); }) });
+                        if (pais.length > 0) {
+                            personapersonalizada[0].per_procedencia = pais[0].pai_nombre;
+                        }
+                        else {
+                            return res.json({
+                                success: false,
+                                mensaje: 'No existen registros de provincia de la persona'
+                            });
+                        }
                     }
                 }
                 else {

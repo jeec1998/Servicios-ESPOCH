@@ -12,7 +12,7 @@ GET http://localhost:8098/rutaCentral/listanacionalidades
 GET http://localhost:8098/rutaCentral/listagenero
 
 ###consumo personalizado de datos de la persona en la centralizada
-GET http://localhost:8098/rutaCentral/objpersonalizado/0605714997
+GET http://localhost:8098/rutaCentral/objpersonalizado/1756723431
 
 ###consumo de paises
 GET http://localhost:8098/rutaCentral/listapais
@@ -71,7 +71,7 @@ GET http://localhost:8098/rutadinardap/verificartitulotercernivel/0600309272
 GET http://localhost:8098/rutadinardap/informacionregistrocivil/0650907694
 
 ###consumo personalizado de datos de la persona en la centralizada dado el email
-GET http://localhost:8098/rutaCentral/objetopersonalizadodadoemail/edison.jarai@espoch.edu.ec
+GET http://localhost:8098/rutaCentral/objetopersonalizadodadoemail/monserrath.padilla@espoch.edu.ec
 
 ### Servicio Admisiones - actualizar el estado de la persona dado la cédula
 GET http://localhost:8098/rutaCentral/actualizarestadopersona/060352076856

@@ -50,7 +50,7 @@ GET http://localhost:8098/rutaCentral/obtenernacionalidaddadoid/3
 
 ###consumo personalizado de datos de la persona en la centralizada dado el perid
 //GET http://localhost:8098/rutaCentral/objetopersonalizadodadoid/26691
-GET http://localhost:8098/rutaCentral/objetopersonalizadodadoid/32721
+GET http://localhost:8098/rutaCentral/objetopersonalizadodadoid/24443
 
 ###proceso de nombres especiales
 //GET http://localhost:8098/rutadinardap/procesonombres/DE LA CRUZ GONZALEZ ELOY GUILLERMO

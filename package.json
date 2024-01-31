@@ -8,10 +8,11 @@
     "start": "pm2 start ./bin/www",
     "stop": "pm2 stop ./bin/www",
     "dev": "nodemon centralsw.js",
-    "prodinit":"pull origin main && npm i --prod && sudo pm2 start centralsw.js --name centralsw && sudo pm2 save",
+    "prodinit": "pull origin main && npm i --prod && sudo pm2 start centralsw.js --name centralsw && sudo pm2 save",
     "prod": "pull origin main && npm i --prod && sudo pm2 restart centralsw.js --name centralsw && sudo pm2 save"
   },
   "dependencies": {
+    "base64-js": "^1.5.1",
     "base64-stream": "1.0.0",
     "body-parser": "^1.17.2",
     "cookie-parser": "~1.4.3",
@@ -19,6 +20,7 @@
     "crypto-js": "4.1.1",
     "dateformat": "^5.0.3",
     "debug": "~2.6.3",
+    "exceljs": "^4.4.0",
     "express": "^4.15.5",
     "express-jwt": "^6.1.0",
     "ip": "^1.1.5",

@@ -38,7 +38,29 @@ module.exports.obtenerpersonadatoscompletos = function (cedula, callback) {
         })
         .catch(err => {
             callback(null, false);
-            console.error('Fallo en la Consulta', err.stack);
+            console.log(cedula)
+            console.error('Fallo en la Consulta método obtenerpersonadatoscompletos:', err.stack);
+            client.end()
+        })
+}
+
+module.exports.obtenerpersonareportematriculados = function (cedula, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT p.per_id, d.pid_valor, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia, case when (split_part(p.per_procedencia,'|',2)!='1') THEN concat((select pro_nombre from central.provincia where pro_id = CAST(split_part(p.per_procedencia,'|',1) AS integer)),'/',(select ciu_nombre from central.ciudad where ciu_id = CAST(split_part(p.per_procedencia,'|',2) AS integer)),'/', (select prq_nombre from central.parroquia where prq_id = CAST(split_part(p.per_procedencia,'|',3) AS integer))) "
+    + " else concat((select pai_nombre from central.pais where pai_id = CAST(split_part(p.per_procedencia,'|',1) AS integer)),'/',(select ciu_nombre from central.ciudad where ciu_id = CAST(split_part(p.per_procedencia,'|',2) AS integer)),'/', (select prq_nombre from central.parroquia where prq_id = 1)) end as procedencia, p.per_conyuge, p.per_idconyuge "
+        + "FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id"
+        + " WHERE d.pid_valor= '" + cedula + "'  "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            callback(null, false);
+            console.log(cedula)
+            console.error('Fallo en la Consulta método obtenerpersonadatoscompletos:', err.stack);
             client.end()
         })
 }
@@ -68,7 +90,7 @@ module.exports.obtenerpersonadadoemail = function (email, callback) {
     sentencia = "SELECT p.per_id, d.pid_valor, d.tdi_id, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia,concat((select pro_nombre from central.provincia where pro_id = CAST(split_part(p.per_procedencia,'|',1) AS integer)),'/',(select ciu_nombre from central.ciudad where ciu_id = CAST(split_part(p.per_procedencia,'|',2) AS integer)),'/', (select prq_nombre from central.parroquia where prq_id = CAST(split_part(p.per_procedencia,'|',3) AS integer))) as datosprocedencia, p.per_conyuge, p.per_idconyuge "
         + "FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id"
         + " WHERE p.per_email= '" + email + "'"
-        //+ " WHERE p.per_email= '" + email + "' or p.\"per_emailAlternativo\"='" + email + "'"
+    //+ " WHERE p.per_email= '" + email + "' or p.\"per_emailAlternativo\"='" + email + "'"
     client.connect()
     client.query(sentencia)
         .then(response => {
@@ -582,6 +604,77 @@ module.exports.modificarpersonacondatosmatriz = function (objpersonamatriz, idpe
         callback(null, 0);
     }
 }
+module.exports.actualizarpersonaprocedencia = function (objpersonamatriz, idpersonacentral, callback) {
+    try {
+        var client = new Client(db)
+        var sentencia;
+        sentencia = "UPDATE central.persona SET \"per_nombres\"='" + objpersonamatriz.per_nombres + "', \"per_primerApellido\"='" + objpersonamatriz.per_primerapellido + "', \"per_segundoApellido\"='" + objpersonamatriz.per_segundoapellido + "', \"per_fechaNacimiento\"='" + objpersonamatriz.per_fechanacimiento + "', \"eci_id\"='" + objpersonamatriz.eci_id + "', \"per_fechaModificacion\"='" + objpersonamatriz.per_fechamodificacion + "', \"lugarprocedencia_id\"='" + objpersonamatriz.lugarprocedencia_id + "', \"sex_id\"='" + objpersonamatriz.sex_id + "', \"per_procedencia\"='" + objpersonamatriz.per_procedencia + "' WHERE per_id=" + idpersonacentral + ""
+        client.connect()
+        client.query(sentencia)
+            .then(response => {
+                client.end()
+                callback(null, true);
+            })
+            .catch(err => {
+                console.error('Fallo en la Consulta modificar persona', err.stack);
+                client.end()
+                callback(null, false);
+            })
+    }
+    catch (error) {
+        reject(error);
+        callback(null, 0);
+    }
+}
+
+module.exports.modificarnacionalidadpersonalizado = function (idnacionalidad, reqvisa, idpersona, callback) {
+    try {
+        var client = new Client(db)
+        var sentencia;
+        sentencia = "SELECT * FROM central.\"nacionalidadPersona\" WHERE per_id=" + idpersona + ""
+        client.connect()
+        client.query(sentencia)
+            .then(response => {
+                if (response.rowCount > 0) {
+                    sentencia = "UPDATE central.\"nacionalidadPersona\" SET nac_id=" + idnacionalidad + " WHERE per_id=" + idpersona + ""
+                    client.query(sentencia)
+                        .then(response => {
+                            client.end()
+                            callback(null, true);
+                        })
+                        .catch(err => {
+                            console.error('Fallo en la Consulta modificar nacionalidad', err.stack);
+                            client.end()
+                            callback(null, false);
+                        })
+                }
+                else {
+                    sentencia = "INSERT INTO central.\"nacionalidadPersona\" (\"npe_esNacimiento\", \"npe_tieneVisaTrabajo\", per_id, nac_id, npe_default) "
+                        + "VALUES('true', '" + reqvisa + "' , '" + idpersona + "','" + idnacionalidad + "', 'true');";
+                    client.query(sentencia)
+                        .then(response => {
+                            callback(null, true);
+                            client.end()
+                        })
+                        .catch(err => {
+                            console.error('Fallo en la Consulta Crear nacionalidad persona', err.stack);
+                            callback(null, false);
+                            client.end()
+                        })
+                }
+
+            })
+            .catch(err => {
+                console.error('Fallo en la Consulta modificar nacionalidad persona', err.stack);
+                client.end()
+                callback(null, false);
+            })
+    }
+    catch (error) {
+        reject(error);
+        callback(null, 0);
+    }
+}
 ///////ACTUALIZAR LA DIRECCION DE LA PERSONA EN LA CENTRALIZADA
 module.exports.modificardireccionpersona = function (calleprincipal, idpersona, idparroquia, callback) {
     try {
@@ -799,9 +892,25 @@ module.exports.obtenerregistroempiezaconunvalor = function (nombretabla, nombrec
             callback(null, false);
             client.end()
         })
-
-    e
 }
+
+module.exports.obtenerpaisdadonombre = function (nombre, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT * FROM central.pais WHERE pai_nombre ilike '%" + nombre + "%'"
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, null);
+            client.end()
+        })
+}
+
 module.exports.actualizardiscapacidad = function (porcentaje, tipodiscapacidad, idcarnet, callback) {
     var client = new Client(db)
     var sentencia;

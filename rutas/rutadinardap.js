@@ -8,7 +8,10 @@ const nomenclatura = require('../config/nomenclatura');
 const { Console } = require('console');
 const urlAcademico = require('../config/urlAcademico');
 const centralizada = require('../modelo/centralizada');
+const administracion = require('../modelo/administracion');
 const e = require('express');
+const base64 = require('base64-js');
+const ExcelJS = require('exceljs');
 
 router.get('/obtenerpersona/:cedula', async (req, res) => {
     var cedula = req.params.cedula;
@@ -308,6 +311,482 @@ router.get('/informacionregistrocivil/:cedula', async (req, res) => {
         });
     }
 });
+////metodo para actualizar datos de los estudiantes matriculados consumiendo informacion del registro civil
+router.get('/actualizardatosmatriculadosenlacentralizada', async (req, res) => {
+    try {
+        var listamatriculados = []
+        var datosregistro = await new Promise(resolve => { administracion.listacarrerasmaster((err, valor) => { resolve(valor); }) });
+        if (datosregistro != null) {
+            var periodovigente = await new Promise((resolve) => {
+                administracion.periodovigentemaster((err, valor) => {
+                    resolve(valor);
+                });
+            });
+            if (periodovigente != null) {
+                for (carrera of datosregistro) {
+                    var matriculadoscarrera = await new Promise((resolve) => {
+                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.Facultad, carrera.strBaseDatos, periodovigente[0].strCodigo, (err, valor) => {
+                            resolve(valor);
+                        });
+                    });
+                    if (matriculadoscarrera != null) {
+                        for (var matricula of matriculadoscarrera.recordset) {
+                            listamatriculados.push(matricula)
+                        }
+                    }
+                    else {
+                        console.log('No existen estudiantes matriculados en la carrera: ' + carrera.Carrera + ' base de datos:' + carrera.strBaseDatos + ' en el periodo: ' + periodovigente[0].strCodigo)
+                    }
+                }
+                console.log('Longitud de la lista de matriculados: ' + listamatriculados.length)
+                if (listamatriculados != null) {
+                    var listapersonalizada = []
+                    for (var i = 0; i < listamatriculados.length; i++) {
+                        var cedula = listamatriculados[i].strCedula;
+                        cedula = cedula.replace('-', '')
+                        var datosregistrocivil = await new Promise((resolve) => {
+                            consumoservicioregistrocivil(cedula, (err, valor) => {
+                                resolve(valor);
+                            });
+                        });
+                        if (datosregistrocivil != null) {
+                            var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                            //console.log(personapersonalizada.length)
+                            if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
+                                //modificar los datos en la centralizada 
+                                var actualizarpersona = await new Promise(resolve => { centralizada.actualizarpersonaprocedencia(datosregistrocivil, personapersonalizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                                if (actualizarpersona) {
+                                    var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersonalizado(datosregistrocivil.per_nacionalidad, datosregistrocivil.nac_reqvisa, personapersonalizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                                    if (actualizanacionalidad) {
+                                        console.log('Datos de la persona actualizados correctamente N° ' + i)
+                                    }
+                                    else {
+                                        console.log('No se ha actualizado la nacionalidad del estudiante: ' + cedula)
+                                    }
+                                }
+                                else {
+                                    console.log('No se ha actualizado la información del estudiante: ' + cedula)
+                                }
+                            }
+                            else {
+                                //registrar la persona en la centralizada
+                                var ingresopersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(datosregistrocivil, (err, valor) => { resolve(valor); }) });
+                                if (ingresopersona) {
+                                    var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(datosregistrocivil.per_nombres, datosregistrocivil.per_primerapellido, datosregistrocivil.per_segundoapellido, datosregistrocivil.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
+                                    if (persona.length > 0) {
+                                        var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonal(cedula, persona[0].per_id, (err, valor) => { resolve(valor); }) });
+                                        if (documentopersonalreg) {
+                                            ////pendiente registrar en la tabla domicilio y nacionalidad
+                                            var ingresodireccion = await new Promise(resolve => { centralizada.ingresoDireccionPersona(persona[0].per_id, datosregistrocivil.dir_calleprincipal, datosregistrocivil.dir_numcasa, datosregistrocivil.lugarprocedencia_id, (err, valor) => { resolve(valor); }) });
+                                            if (ingresodireccion) {
+                                                var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, datosregistrocivil.nac_reqvisa, datosregistrocivil.per_nacionalidad, (err, valor) => { resolve(valor); }) });
+                                                if (ingresoNacionalidad) {
+                                                    console.log('Registro ingresado correctamente')
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                            listapersonalizada.push(personapersonalizada[0])
+                        }
+                        else {
+                            console.log('No tiene informacion en el registro civil el estudiante: ' + listamatriculados[i].strCedula)
+                        }
+                    }
+                    return res.json({
+                        success: true,
+                        matriculados: listapersonalizada
+                    });
+                }
+                else {
+                    return res.json({
+                        success: false,
+                        mensaje: 'No existe información de los estudiantes matriculados'
+                    });
+                }
+            } else {
+                return res.json({
+                    success: false,
+                    mensaje: 'No existe un periodo vigente'
+                });
+            }
+        } else {
+            return res.json({
+                success: false,
+                mensaje: 'No existen carreras en la base master'
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/actualizardatosmatriculado/:cedula', async (req, res) => {
+    const cedula = req.params.cedula
+    var personacentralizada = {}
+    try {
+        var datosregistrocivil = await new Promise((resolve) => {
+            consumoservicioregistrocivil(cedula, (err, valor) => {
+                resolve(valor);
+            });
+        });
+        console.log(datosregistrocivil)
+        if (datosregistrocivil != null) {
+            var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+            //console.log(personapersonalizada.length)
+            if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
+                //modificar los datos en la centralizada 
+
+                var actualizarpersona = await new Promise(resolve => { centralizada.actualizarpersonaprocedencia(datosregistrocivil, personapersonalizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                if (actualizarpersona) {
+                    var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersonalizado(datosregistrocivil.per_nacionalidad, datosregistrocivil.nac_reqvisa, personapersonalizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                    if (actualizanacionalidad) {
+                        console.log('Datos de la persona actualizados correctamente')
+                    }
+                    else {
+                        console.log('No se ha actualizado la nacionalidad del estudiante: ' + cedula)
+                    }
+                }
+                else {
+                    console.log('No se ha actualizado la información del estudiante: ' + cedula)
+                }
+            }
+            else {
+                //registrar la persona en la centralizada
+                var ingresopersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(datosregistrocivil, (err, valor) => { resolve(valor); }) });
+                if (ingresopersona) {
+                    var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(datosregistrocivil.per_nombres, datosregistrocivil.per_primerapellido, datosregistrocivil.per_segundoapellido, datosregistrocivil.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
+                    if (persona.length > 0) {
+                        var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonal(cedula, persona[0].per_id, (err, valor) => { resolve(valor); }) });
+                        if (documentopersonalreg) {
+                            ////pendiente registrar en la tabla domicilio y nacionalidad
+                            var ingresodireccion = await new Promise(resolve => { centralizada.ingresoDireccionPersona(persona[0].per_id, datosregistrocivil.dir_calleprincipal, datosregistrocivil.dir_numcasa, datosregistrocivil.lugarprocedencia_id, (err, valor) => { resolve(valor); }) });
+                            if (ingresodireccion) {
+                                var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, datosregistrocivil.nac_reqvisa, datosregistrocivil.per_nacionalidad, (err, valor) => { resolve(valor); }) });
+                                if (ingresoNacionalidad) {
+                                    console.log('Registro ingresado correctamente')
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonareportematriculados(cedula, (err, valor) => { resolve(valor); }) });
+            personacentralizada = personapersonalizada[0]
+        }
+        else {
+            console.log('No tiene informacion en el registro civil el estudiante: ' + cedula)
+        }
+        return res.json({
+            success: true,
+            persona: personacentralizada
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+//// reporte de estudiantes matriculados consumiendo la centralizada
+router.get('/listamatriculadosactualizados', async (req, res) => {
+    try {
+        var listamatriculados = []
+        var datosregistro = await new Promise(resolve => { administracion.listacarrerasmaster((err, valor) => { resolve(valor); }) });
+        if (datosregistro != null) {
+            var periodovigente = await new Promise((resolve) => {
+                administracion.periodovigentemaster((err, valor) => {
+                    resolve(valor);
+                });
+            });
+            if (periodovigente != null) {
+                for (carrera of datosregistro) {
+                    var matriculadoscarrera = await new Promise((resolve) => {
+                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.Facultad, carrera.strBaseDatos, periodovigente[0].strCodigo, (err, valor) => {
+                            resolve(valor);
+                        });
+                    });
+                    if (matriculadoscarrera != null) {
+                        for (var matricula of matriculadoscarrera.recordset) {
+                            listamatriculados.push(matricula)
+                        }
+                    }
+                    else {
+                        console.log('No existen estudiantes matriculados en la carrera: ' + carrera.Carrera + ' base de datos:' + carrera.strBaseDatos + ' en el periodo: ' + periodovigente[0].strCodigo)
+                    }
+                }
+                console.log('Longitud de la lista de matriculados: ' + listamatriculados.length)
+                if (listamatriculados != null) {
+                    var listapersonalizada = []
+                    var cont = 1
+                    for (var i = 0; i < listamatriculados.length; i++) {
+                        var cedula = listamatriculados[i].strCedula;
+                        cedula = cedula.replace('-', '')
+                        var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonareportematriculados(cedula, (err, valor) => { resolve(valor); }) });
+                        //console.log(personapersonalizada.length)
+
+                        if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
+                            var nacionalidad = ''
+                            /*if (personapersonalizada[0].nac_id != null) {
+                                nacionalidad = personapersonalizada[0].nac_nombre
+                            }
+                            else {
+                                nacionalidad = listamatriculados[i].strNacionalidad
+                            }*/
+                            var datosprocedencia = personapersonalizada[0].procedencia.split('/')
+                            var procedencia = ''
+                            var provincia = 'NO ESPECIFICADO'
+                            var ciudad = 'NO ESPECIFICADO'
+                            var parroquia = 'NO ESPECIFICADO'
+
+                            if (datosprocedencia[1] == 'NO ESPECIFICADO') {
+                                nacionalidad = datosprocedencia[0]
+                            }
+                            else {
+                                nacionalidad = 'ECUADOR'
+                                provincia = datosprocedencia[0]
+                                ciudad = datosprocedencia[1]
+                                parroquia = datosprocedencia[2]
+                                //procedencia = datosprocedencia[0] + '/' + datosprocedencia[1] + '/' + datosprocedencia[2]
+
+                            }
+                            var objestudiante = {
+                                contador: cont,
+                                cedula: personapersonalizada[0].pid_valor,
+                                nombres: personapersonalizada[0].per_nombres + ' ' + personapersonalizada[0].per_primerApellido + ' ' + personapersonalizada[0].per_segundoApellido,
+                                codcarrera: listamatriculados[i].strCodigo,
+                                carrera: listamatriculados[i].Carrera,
+                                codfacultad: listamatriculados[i].codigofacultad,
+                                facultad: listamatriculados[i].Facultad,
+                                sede: listamatriculados[i].Sede,
+                                periodo: listamatriculados[i].strCodPeriodo,
+                                nacionalidad: nacionalidad,
+                                provincia: provincia,
+                                ciudad: ciudad,
+                                parroquia: parroquia,
+                                sexo: personapersonalizada[0].sexo,
+                                genero: personapersonalizada[0].gen_nombre
+
+                            }
+                            listapersonalizada.push(objestudiante)
+                            cont = cont + 1
+                            if (i == 1000) {
+                                i = listamatriculados.length
+                            }
+                        }
+                    }
+                    if (listapersonalizada.length > 0) {
+                        var reportebase64 = await new Promise((resolve) => {
+                            reportematriculadosExcel(listapersonalizada, (err, valor) => {
+                                resolve(valor);
+                            });
+                        });
+                        return res.json({
+                            success: true,
+                            reporte: reportebase64
+                        });
+                    } else {
+                        return res.json({
+                            success: false,
+                            mensaje: 'No existe información de los estudiantes matriculados'
+                        });
+                    }
+
+                }
+                else {
+                    return res.json({
+                        success: false,
+                        mensaje: 'No existe información de los estudiantes matriculados'
+                    });
+                }
+                return res.json({
+                    success: true,
+                    matriculados: listapersonalizada
+                });
+            } else {
+                return res.json({
+                    success: false,
+                    mensaje: 'No existe un periodo vigente'
+                });
+            }
+
+        }
+        else {
+            return res.json({
+                success: false,
+                mensaje: 'No existen carreras en la base master'
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+router.get('/periodovigente', async (req, res) => {
+    try {
+        var periodovigente = await new Promise(resolve => { administracion.periodovigentemaster((err, valor) => { resolve(valor); }) });
+        return res.json({
+            success: true,
+            periodo: periodovigente[0]
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false,
+            mensaje: 'No existe un periodo activo en la base master'
+        });
+    }
+});
+
+
+router.get('/actualizarmatriculados', async (req, res) => {
+    try {
+
+        var listamatriculados = await new Promise(resolve => { traermatriculasperiodovigente((err, valor) => { resolve(valor); }) });
+        if (listamatriculados != null) {
+            for (var i = 0; i < listamatriculados.length; i++) {
+                var cedula = listamatriculados[i].cedula;
+
+            }
+        }
+        else {
+            return res.json({
+                success: false,
+                mensaje: 'No existe información de los estudiantes matriculados'
+            });
+        }
+
+        let listado = [];
+        var tipo = 1;
+        var persona = await new Promise(resolve => { centralizada.obtenerdocumento(cedula, (err, valor) => { resolve(valor); }) });
+        if (persona.length > 0) {
+            var numerodias = 0;
+            var Resultado = await new Promise(resolve => { centralizada.obtenerdiasdeconfiguracion((err, valor) => { resolve(valor); }) });
+            if (Resultado != null) {
+                var numerodias = Resultado[0].valor;
+            }
+            var fechasistema = "";
+            fechasistema = persona[0].per_fechaModificacion;
+            var listafecha = persona[0].per_fechaModificacion.toString().split(".")[0]
+            let fechaactual = new Date();
+            let resta = fechaactual.getTime() - fechasistema.getTime();
+            var resultadoresta = Math.round(resta / (1000 * 60 * 60 * 24));
+            var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+            if ((resultadoresta > numerodias) && (numerodias != 0)) {
+                if (!persona[0].admision) {
+                    var listadinardap = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
+                    if (listadinardap != null) {
+                        personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                        if (personapersonalizada != null) {
+                            if (personapersonalizada.length > 0) {
+                                listado.push(personapersonalizada[0]);
+                                console.log('Datos de la persona actualizados en la centralizada')
+                            }
+                        }
+                    }
+                    else {
+                        listado.push(personapersonalizada[0]);
+                        console.log('Datos de la persona no actualizados en la centralizada')
+                    }
+                }
+                else {
+                    listado.push(personapersonalizada[0]);
+                    console.log('Datos de la persona no actualizados en la centralizada')
+                }
+            }
+            else {
+                if (personapersonalizada != null) {
+                    if (personapersonalizada.length > 0) {
+                        listado.push(personapersonalizada[0]);
+                        console.log('Persona devuelta de la centralizada')
+                    }
+                }
+            }
+            return res.json({
+                success: true,
+                listado: listado
+            });
+        }
+        else {
+            if ((cedula.length == 10) || (cedula.length == 13)) {
+                var registraruc = false;
+                tipo = 2;
+                if (cedula.length == 13) {
+                    registraruc = true;
+                    cedula = cedula.substring(0, 10);
+                }
+                var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
+                    if (registraruc) {
+                        var ruc = cedula + '001';
+                        var rucreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonalGenerico(ruc, 2, personapersonalizada[0].per_id, true, (err, valor) => { resolve(valor); }) });
+                        if (rucreg) {
+                            personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(ruc, (err, valor) => { resolve(valor); }) });
+                        }
+                        else {
+                            return res.json({
+                                success: false,
+                                mensaje: 'Error al registrar el ruc de la persona'
+                            });
+                        }
+                    }
+                } else {
+                    var registrar = await new Promise(resolve => { consumirserviciodinardap(tipo, cedula, res, persona, (err, valor) => { resolve(valor); }) });
+                    if (registrar != null) {
+                        personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                        if (registraruc) {
+                            var ruc = cedula + '001';
+                            var rucreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonalGenerico(ruc, 2, personapersonalizada[0].per_id, true, (err, valor) => { resolve(valor); }) });
+                            if (rucreg) {
+                                personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(ruc, (err, valor) => { resolve(valor); }) });
+                            }
+                            else {
+                                return res.json({
+                                    success: false,
+                                    mensaje: 'Error al registrar el ruc de la persona'
+                                });
+                            }
+                        }
+                    }
+                    else {
+                        return res.json({
+                            success: false,
+                            mensaje: 'No se ha encontrado información en la Dinardap'
+                        });
+                    }
+                }
+                return res.json({
+                    success: true,
+                    listado: personapersonalizada
+                });
+            }
+            else {
+                return res.json({
+                    success: false,
+                    mensaje: 'Cédula o Documento incorrecto'
+                });
+            }
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+
+
+
 
 //////FUNCIONES
 async function actualizarcamposportipo(idtipo, campocentralizada, tablacentralizada, valor, objpersona, callback) {
@@ -1122,6 +1601,281 @@ async function actualizaciondenombrescentral(nombrecompleto, callback) {
         console.log('Error: ' + err)
         callback(null, null)
     }
+}
+
+async function traermatriculasperiodovigente(callback) {
+    try {
+        var Request = require("request");
+        var fs = require("fs");
+        var http = require("http");
+        var https = require("https");
+        var cer1 = pathimage.join(
+            __dirname,
+            "../Certificados/espoch_sectigo_key_2019.key"
+        );
+        var cer2 = pathimage.join(
+            __dirname,
+            "../Certificados/STAR_espoch_edu_ec.crt"
+        );
+        var cer3 = pathimage.join(
+            __dirname,
+            "../Certificados/STAR_espoch_edu_ec.crt"
+        );
+        Request.post(
+            {
+                rejectUnauthorized: false,
+                url: "https://swsairest.espoch.edu.ec/api/matriculas",
+                json: true,
+            },
+            function (error, response, body) {
+                return callback(true, body);
+            }
+        );
+    } catch (err) {
+        console.error("Fallo en la Consulta", err.stack);
+        console.log("Error: " + err);
+        return callback(false, null);
+    }
+}
+
+async function consumoservicioregistrocivil(cedula, callback) {
+    try {
+        var url = UrlAcademico.urlwsdl;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoPaq;
+        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedula };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.getFichaGeneral(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error consumo servicio: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var listado = []
+                        var jsonString = JSON.stringify(result.return);
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposdinardap = objjson.instituciones[0].datosPrincipales.registros;
+                        for (campos of listacamposdinardap) {
+                            listado.push(campos);
+                        }
+                        if (listado.length > 0) {
+                            let datospersona = {};
+                            var cedulanueva = "";
+                            var nombrescompletos = "";
+                            var primerApellido = "";
+                            var segundoApellido = "";
+                            var fechaNacimiento = "";
+                            var idestadocivil = 1;
+                            var idsexo = 1;
+                            var idgenero = 1;
+                            var idprovincia = 1;
+                            var idciudad = 1;
+                            var idparroquia = 1;
+                            var procedenciapersona = "";
+                            var lugarprocedencia = "";
+                            var conyuge = "";
+                            var idconyuge = "";
+                            var calleprincipal = "";
+                            var numerocasa = "";
+                            var idnacionalidad = "1";
+                            var blnvisatrabajo = "false";
+                            for (atr of listado) {
+                                if (atr.campo == "cedula") {
+                                    cedulanueva = atr.valor;
+                                }
+                                if (atr.campo == "nombre") {
+                                    const nombres = atr.valor;
+                                    var estructuranombres = await new Promise(resolve => { actualizaciondenombrescentral(nombres, (err, valor) => { resolve(valor); }) });
+                                    if (estructuranombres != null) {
+                                        primerApellido = estructuranombres.per_primerapellido
+                                        segundoApellido = estructuranombres.per_segundoapellido
+                                        nombrescompletos = estructuranombres.per_nombres
+                                    }
+                                    else {
+                                        console.log("Error al obtener los nombres y apellidos estructurados")
+                                    }
+                                }
+                                if (atr.campo == "fechaNacimiento") {
+                                    fechaNacimiento = atr.valor;
+                                }
+                                if (atr.campo == "estadoCivil") {
+                                    var estadocivil = await new Promise(resolve => { centralizada.obtenerestadocivildadonombre(atr.valor, (err, valor) => { resolve(valor); }) });
+                                    if (estadocivil.length > 0) {
+                                        idestadocivil = estadocivil[0].eci_id;
+                                    }
+                                }
+                                if (atr.campo == "sexo") {
+                                    var sexo = await new Promise(resolve => { centralizada.obtenersexodadonombre(atr.valor, (err, valor) => { resolve(valor); }) });
+                                    if (sexo.length > 0) {
+                                        idsexo = sexo[0].sex_id;
+                                    }
+                                    if (atr.valor.includes('HOMBRE')) {
+                                        idgenero = 1;
+                                    }
+                                    else {
+                                        if (atr.valor.includes('MUJER')) {
+                                            idgenero = 2;
+                                        }
+                                        else {
+                                            idgenero = 3;
+                                        }
+                                    }
+                                }
+                                if (atr.campo == "callesDomicilio") {
+                                    calleprincipal = atr.valor;
+                                }
+                                if (atr.campo == "numeroCasa") {
+                                    numerocasa = atr.valor;
+                                }
+                                if (atr.campo == "lugarNacimiento") {
+                                    const lugarNacimiento = atr.valor.split("/");
+                                    if (lugarNacimiento.length > 0) {
+                                        console.log(lugarNacimiento)
+                                        var provincia = lugarNacimiento[0];
+                                        if (lugarNacimiento.length > 1) {
+                                            var ciudad = lugarNacimiento[1];
+                                            var parroquia = lugarNacimiento[2];
+                                            var objciudad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('ciudad', 'ciu_nombre', ciudad, (err, valor) => { resolve(valor); }) });
+                                            if (objciudad.length > 0) {
+                                                idciudad = objciudad[0].ciu_id;
+                                            }
+                                            var objparroquia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('parroquia', 'prq_nombre', parroquia, (err, valor) => { resolve(valor); }) });
+                                            if (objparroquia.length > 0) {
+                                                idparroquia = objparroquia[0].prq_id;
+                                            }
+                                        } else {
+                                            var idciudad = 1;
+                                            var idparroquia = 1;
+                                        }
+                                        var objprovincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('provincia', 'pro_nombre', provincia, (err, valor) => { resolve(valor); }) });
+                                        if (objprovincia.length > 0) {
+                                            idprovincia = objprovincia[0].pro_id;
+                                        }
+                                        else {
+                                            var objpais = await new Promise(resolve => { centralizada.obtenerpaisdadonombre(provincia, (err, valor) => { resolve(valor); }) });
+                                            if (objpais != null) {
+                                                idprovincia = objpais[0].pai_id;
+                                            }
+                                            else {
+                                                idprovincia = 1;
+                                            }
+                                        }
+                                        var procedenciapersona = idprovincia + '|' + idciudad + '|' + idparroquia;
+                                        var lugarprocedencia = idparroquia;
+                                        if (idparroquia == 1) {
+                                            lugarprocedencia = idprovincia
+                                        }
+                                    }
+                                }
+                                if (atr.campo == "conyuge") {
+                                    conyuge = atr.valor;
+                                }
+                                if (atr.campo == "cedulaConyuge") {
+                                    idconyuge = atr.valor;
+                                }
+                                if (atr.campo == "nacionalidad") {
+                                    var nacionalidad = atr.valor;
+                                    var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('nacionalidad', 'nac_nombre', nacionalidad, (err, valor) => { resolve(valor); }) });
+                                    if (objnacionalidad.length > 0) {
+                                        idnacionalidad = objnacionalidad[0].nac_id;
+                                        blnvisatrabajo = objnacionalidad[0].nac_requiereVisaTrabajo;
+                                    }
+                                }
+                                datospersona = {
+                                    per_nombres: nombrescompletos,
+                                    per_primerapellido: primerApellido,
+                                    per_segundoapellido: segundoApellido,
+                                    per_fechanacimiento: fechaNacimiento,
+                                    tsa_id: 1,
+                                    etn_id: 8,
+                                    eci_id: idestadocivil,
+                                    gen_id: idgenero,
+                                    per_creadopor: 0,
+                                    per_fechacreacion: formatDate(new Date()),
+                                    per_modificadopor: 0,
+                                    per_fechamodificacion: formatDate(new Date()),
+                                    lugarprocedencia_id: lugarprocedencia,
+                                    sex_id: idsexo,
+                                    per_procedencia: procedenciapersona,
+                                    per_conyuge: conyuge,
+                                    per_idconyuge: idconyuge,
+                                    per_cedula: cedulanueva,
+                                    dir_calleprincipal: calleprincipal,
+                                    dir_numcasa: numerocasa,
+                                    per_nacionalidad: idnacionalidad,
+                                    nac_reqvisa: blnvisatrabajo,
+                                    admision: false
+                                }
+                            }
+                            callback(null, datospersona)
+                        }
+                        else {
+                            console.log('Error en listado de campos dinardap: ')
+                            callback(null, null);
+                        }
+                    }
+                });
+            } else {
+                callback(null, null);
+                console.log('Error consumo dinardap: ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null, null);
+    }
+}
+
+async function reportematriculadosExcel(
+    listado,
+    callback
+) {
+    try {
+        if (listado.length > 0) {
+            var datosarray = [['No', 'Codigo Carrera', 'Carrera', 'Codigo Facultad', 'Facultad', 'Sede', 'Cédula', 'Apellidos y Nombres', 'Período', 'País de Origen', 'Provincia', 'Ciudad', 'Parroquia', 'Sexo', 'Genero']];
+            for (estudiante of listado) {
+                datosarray.push([estudiante.contador, estudiante.codcarrera, estudiante.carrera, estudiante.codfacultad, estudiante.facultad, estudiante.sede, estudiante.cedula, estudiante.nombres, estudiante.periodo, estudiante.nacionalidad, estudiante.provincia, estudiante.ciudad, estudiante.parroquia, estudiante.sexo, estudiante.genero])
+            }
+            generateExcelBase64(datosarray)
+                .then((base64String) => {
+                    // Puedes enviar o guardar la cadena base64 según tus necesidades
+                    return callback(null, base64String);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    return callback(null, false);
+                });
+
+        } else {
+            return callback(null, false);
+        }
+    } catch (err) {
+        console.log("Error: " + err);
+        return callback(null, false);
+    }
+}
+
+async function generateExcelBase64(dataArray) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Datos DAN');
+
+    // Agregar datos al archivo Excel
+    dataArray.forEach((row) => {
+        worksheet.addRow(row);
+    });
+
+    // Generar el archivo Excel en memoria
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Convertir a base64
+    const base64String = base64.fromByteArray(buffer);
+
+    return base64String;
 }
 
 module.exports = router;

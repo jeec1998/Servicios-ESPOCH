@@ -29,6 +29,7 @@
     "jwt-decode": "^3.1.2",
     "morgan": "~1.8.1",
     "mssql": "^4.1.0",
+    "node-cron": "^3.0.3",
     "pdfkit": "^0.13.0",
     "pdfkit-construct": "^1.2.3",
     "pg": "^8.7.3",

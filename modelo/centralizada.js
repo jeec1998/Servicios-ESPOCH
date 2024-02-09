@@ -60,7 +60,7 @@ module.exports.obtenerpersonareportematriculados = function (cedula, callback) {
         .catch(err => {
             callback(null, false);
             console.log(cedula)
-            console.error('Fallo en la Consulta método obtenerpersonadatoscompletos:', err.stack);
+            console.error('Fallo en la Consulta método obtenerpersonareportematriculados:', err.stack);
             client.end()
         })
 }

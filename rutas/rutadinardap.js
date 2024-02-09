@@ -1,3 +1,5 @@
+const { ejecutarConsultaSQLcontransacion } = require("./../config/ejecucion.js");
+const { Pool } = require("pg");
 const express = require('express');
 const router = express.Router();
 const soap = require('soap');
@@ -12,6 +14,8 @@ const administracion = require('../modelo/administracion');
 const e = require('express');
 const base64 = require('base64-js');
 const ExcelJS = require('exceljs');
+const bd = require("../config/baseMaster");
+var cron = require('node-cron');
 
 router.get('/obtenerpersona/:cedula', async (req, res) => {
     var cedula = req.params.cedula;
@@ -508,7 +512,7 @@ router.get('/listamatriculadosactualizados', async (req, res) => {
             if (periodovigente != null) {
                 for (carrera of datosregistro) {
                     var matriculadoscarrera = await new Promise((resolve) => {
-                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.Facultad, carrera.strBaseDatos, periodovigente[0].strCodigo, (err, valor) => {
+                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.strCodigo, carrera.Facultad, carrera.codigofacultad, carrera.Sede, carrera.strBaseDatos, periodovigente[0].strCodigo, (err, valor) => {
                             resolve(valor);
                         });
                     });
@@ -560,11 +564,11 @@ router.get('/listamatriculadosactualizados', async (req, res) => {
                                 contador: cont,
                                 cedula: personapersonalizada[0].pid_valor,
                                 nombres: personapersonalizada[0].per_nombres + ' ' + personapersonalizada[0].per_primerApellido + ' ' + personapersonalizada[0].per_segundoApellido,
-                                codcarrera: listamatriculados[i].strCodigo,
+                                codcarrera: listamatriculados[i].codcarrera,
                                 carrera: listamatriculados[i].Carrera,
-                                codfacultad: listamatriculados[i].codigofacultad,
+                                codfacultad: listamatriculados[i].codfacultad,
                                 facultad: listamatriculados[i].Facultad,
-                                sede: listamatriculados[i].Sede,
+                                sede: listamatriculados[i].sede,
                                 periodo: listamatriculados[i].strCodPeriodo,
                                 nacionalidad: nacionalidad,
                                 provincia: provincia,
@@ -576,9 +580,6 @@ router.get('/listamatriculadosactualizados', async (req, res) => {
                             }
                             listapersonalizada.push(objestudiante)
                             cont = cont + 1
-                            if (i == 1000) {
-                                i = listamatriculados.length
-                            }
                         }
                     }
                     if (listapersonalizada.length > 0) {
@@ -630,6 +631,381 @@ router.get('/listamatriculadosactualizados', async (req, res) => {
         });
     }
 });
+
+//// migración de estudiantes matriculados a la base de indicadores
+async function migrarmatriculadosporperiodo() {
+    try {
+        var listamatriculados = []
+        var datosregistro = await new Promise(resolve => { administracion.listacarrerasmaster((err, valor) => { resolve(valor); }) });
+        if (datosregistro != null) {
+            var periodovigente = await new Promise((resolve) => {
+                administracion.periodovigentemaster((err, valor) => {
+                    resolve(valor);
+                });
+            });
+            if (periodovigente != null) {
+                for (carrera of datosregistro) {
+                    var matriculadoscarrera = await new Promise((resolve) => {
+                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.strCodigo, carrera.Facultad, carrera.codigofacultad, carrera.Sede, carrera.strBaseDatos, periodovigente[0].strCodigo, (err, valor) => {
+                            resolve(valor);
+                        });
+                    });
+                    if (matriculadoscarrera != null) {
+                        for (var matricula of matriculadoscarrera.recordset) {
+                            listamatriculados.push(matricula)
+                        }
+                    }
+                    else {
+                        console.log('No existen estudiantes matriculados en la carrera: ' + carrera.Carrera + ' base de datos:' + carrera.strBaseDatos + ' en el periodo: ' + periodovigente[0].strCodigo)
+                    }
+                }
+                if (listamatriculados != null) {
+                    var listapersonalizada = []
+                    var cont = 1
+                    for (var i = 0; i < listamatriculados.length; i++) {
+                        var cedula = listamatriculados[i].strCedula;
+                        cedula = cedula.replace('-', '')
+                        var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonareportematriculados(cedula, (err, valor) => { resolve(valor); }) });
+                        //console.log(personapersonalizada.length)
+
+                        if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
+                            var nacionalidad = ''
+                            var datosprocedencia = personapersonalizada[0].procedencia.split('/')
+                            var procedencia = ''
+                            var provincia = 'NO ESPECIFICADO'
+                            var ciudad = 'NO ESPECIFICADO'
+                            var parroquia = 'NO ESPECIFICADO'
+
+                            if (datosprocedencia[1] == 'NO ESPECIFICADO') {
+                                nacionalidad = datosprocedencia[0]
+                            }
+                            else {
+                                nacionalidad = 'ECUADOR'
+                                provincia = datosprocedencia[0]
+                                ciudad = datosprocedencia[1]
+                                parroquia = datosprocedencia[2]
+
+                            }
+                            var objestudiante = {
+                                contador: cont,
+                                cedula: personapersonalizada[0].pid_valor,
+                                nombres: personapersonalizada[0].per_nombres + ' ' + personapersonalizada[0].per_primerApellido + ' ' + personapersonalizada[0].per_segundoApellido,
+                                codcarrera: listamatriculados[i].codcarrera,
+                                carrera: listamatriculados[i].Carrera,
+                                codfacultad: listamatriculados[i].codfacultad,
+                                facultad: listamatriculados[i].Facultad,
+                                sede: listamatriculados[i].sede,
+                                periodo: listamatriculados[i].strCodPeriodo,
+                                nacionalidad: nacionalidad,
+                                provincia: provincia,
+                                ciudad: ciudad,
+                                parroquia: parroquia,
+                                sexo: personapersonalizada[0].sexo,
+                                genero: personapersonalizada[0].gen_nombre
+
+                            }
+                            listapersonalizada.push(objestudiante)
+                            cont = cont + 1
+                            /*if (i == 100) {
+                                i = listamatriculados.length
+                            }*/
+                        }
+                    }
+                    if (listapersonalizada.length > 0) {
+                        var cantreg = 0;
+                        var cantmod = 0;
+                        for (var registro of listapersonalizada) {
+                            var registrado = await new Promise(resolve => { administracion.registrotablamatriculadosindicadores('Informacion_Institucional', registro.cedula, registro.periodo, (err, valor) => { resolve(valor); }) });
+                            if ((registrado != null) && (registrado.length > 0)) {
+                                var modificar = await new Promise(resolve => { administracion.modificarestudiantebdindicadores('Informacion_Institucional', registro, (err, valor) => { resolve(valor); }) });
+                                if (modificar == true) {
+                                    cantmod = cantmod + 1
+                                }
+                            }
+                            else {
+                                var registrar = await new Promise(resolve => { administracion.registrarestudiantebdindicadores('Informacion_Institucional', registro, (err, valor) => { resolve(valor); }) });
+                                if (registrar == true) {
+                                    cantreg = cantreg + 1
+                                }
+                            }
+                        }
+                        console.log('Migración correcta - Registros ingresados: ' + cantreg + ' / Registros modificados: ' + cantmod)
+                    } else {
+                        console.log('No existe información de los estudiantes matriculados')
+                    }
+
+                }
+                else {
+                    console.log('No existe información de los estudiantes matriculados')
+                }
+            } else {
+                console.log('No existe un periodo vigente')
+            }
+
+        }
+        else {
+            console.log('No existen carreras en la base master')
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+    }
+}
+
+//// migración de estudiantes matriculados a la base de indicadores --- servicio de alta concurrencia
+async function migrarmatriculadosporperiodomod() {
+    let lst = [];
+    const sql = require('mssql');
+    try {
+        var config = {
+            user: "sa",
+            "password": "BDSqlAdmin111",
+            "server": "172.17.102.218",
+            //  password: "@SQLserver",
+            // server: "172.17.103.26",
+            database: "OAS_Master",
+            portNumber: "1435",
+            pool: {
+                max: 300000,
+                min: 0,
+                idleTimeoutMillis: 60,
+            },
+            options: {
+                encrypt: false, // for azure
+                trustServerCertificate: false, // change to true for local dev / self-signed certs
+            }
+        };
+
+        var conex = bd;
+        const pool = new sql.ConnectionPool(conex);
+        await pool.connect();
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+
+        var listamatriculados = []
+        var datosregistro = await ejecutarConsultaSQLcontransacion(transaction, "SELECT Carreras.strCodigo, Carreras.strBaseDatos, Carreras.strCodEstado, Escuelas.strNombre, Facultades.strNombre AS Facultad, Facultades.strCodigo as codigofacultad, Carreras.strNombre AS Carrera, strSede as Sede"
+            + " FROM Carreras INNER JOIN Escuelas ON Carreras.strCodEscuela = Escuelas.strCodigo INNER JOIN Facultades ON Escuelas.strCodFacultad = Facultades.strCodigo ");
+        if (datosregistro != null) {
+            let now = new Date();
+            let day = now.getDate()
+            let month = now.getMonth() + 1
+            let year = now.getFullYear()
+            var fecha = "";
+            if (month < 10) {
+                month = "0" + month
+            }
+            if (day < 10) {
+                day = "0" + day
+            }
+            fecha = year + "-" + month + "-" + day
+            var periodovigente = await ejecutarConsultaSQLcontransacion(transaction, "SELECT * FROM dbo.[Periodos] WHERE  convert(datetime,'" + fecha + "T00:00:00.000" + "') BETWEEN [dtFechaInic] AND [dtFechaFin]");
+            if (periodovigente != null) {
+                var periodo = periodovigente.recordset[0]
+                var listacarreras = datosregistro.recordset
+                for (var carrera of listacarreras) {
+                    var matriculadoscarrera = await ejecutarConsultaSQLcontransacion(transaction, "select  sintCodigo, strCodPeriodo, strCodEstud, strCedula, strNombres, strApellidos, strCodSexo, strNacionalidad, strCodNivel, strAutorizadaPor, dtFechaAutorizada,"
+                        + " strCreadaPor, dtFechaCreada, strCodEstado, cast ('" + carrera.Carrera + "' as varchar(150)) as Carrera,'" + carrera.strCodigo + "' as codcarrera, "
+                        + " cast ('" + carrera.Facultad + "' as varchar(150)) as Facultad, '" + carrera.codigofacultad + "' as codfacultad, '" + carrera.Sede + "' as sede from [" + carrera.strBaseDatos + "].[dbo].matriculas "
+                        + " inner join [" + carrera.strBaseDatos + "].[dbo].Estudiantes on matriculas.strCodEstud=Estudiantes.strCodigo where (strCodPeriodo = '" + periodo.strCodigo + "') and strCodEstado='DEF'");
+                    if (matriculadoscarrera != null) {
+                        var listamatricula = matriculadoscarrera.recordset
+                        for (var matricula of listamatricula) {
+                            listamatriculados.push(matricula)
+                        }
+                    }
+                    else {
+                        console.log('No existen estudiantes matriculados en la carrera: ' + carrera.Carrera + ' base de datos:' + carrera.strBaseDatos + ' en el periodo: ' + periodo.strCodigo)
+                    }
+                }
+                console.log('Matriculados: ' + listamatriculados.length)
+                if (listamatriculados != null) {
+                    var listapersonalizada = await obtenerdatoscentralizada(listamatriculados);
+                    console.log('Lista personalizada: ' + listapersonalizada.length)
+                    if (listapersonalizada.length > 0) {
+                        var cantreg = 0;
+                        var cantmod = 0;
+                        for (var registro of listapersonalizada) {
+                            var registrado = await ejecutarConsultaSQLcontransacion(transaction, "select  *  from [Informacion_Institucional].[dbo].[Academico_Central_EstudiantesMatriculados] where (codperiodo = '" + registro.periodo + "') and (cedula='" + registro.cedula + "')");
+                            if ((registrado != null) && (registrado.recordset.length > 0)) {
+                                var modificar = await ejecutarConsultaSQLcontransacion(transaction, "UPDATE [Informacion_Institucional].[dbo].[Academico_Central_EstudiantesMatriculados] SET apellidosynombres='" + registro.nombres + "', codcarrera='" + registro.codcarrera + "', carrera='" + registro.carrera + "', codfacultad='" + registro.codfacultad + "', facultad='" + registro.facultad + "', sede='" + registro.sede + "', paisorigen='" + registro.nacionalidad + "', provincia='" + registro.provincia + "', ciudad='" + registro.ciudad + "', parroquia='" + registro.parroquia + "', sexo='" + registro.sexo + "', genero='" + registro.genero + "' "
+                                    + " WHERE cedula='" + registro.cedula + "' and codperiodo='" + registro.periodo + "'");
+                                if (modificar.rowsAffected == 1) {
+                                    cantmod = cantmod + 1
+                                }
+                            }
+                            else {
+                                var registrar = await ejecutarConsultaSQLcontransacion(transaction, "INSERT INTO [Informacion_Institucional].[dbo].[Academico_Central_EstudiantesMatriculados] ( cedula, codperiodo, apellidosynombres, codcarrera, carrera, codfacultad, facultad, sede, paisorigen, provincia, ciudad, parroquia, sexo, genero) "
+                                    + "VALUES('" + registro.cedula + "', '" + registro.periodo + "', '" + registro.nombres + "', '" + registro.codcarrera + "','" + registro.carrera + "', '" + registro.codfacultad + "', '" + registro.facultad + "', '" + registro.sede + "', '" + registro.nacionalidad + "','" + registro.provincia + "','" + registro.ciudad + "','" + registro.parroquia + "', '" + registro.sexo + "','" + registro.genero + "');");
+                                if (registrar.rowsAffected == 1) {
+                                    cantreg = cantreg + 1
+                                }
+                            }
+                        }
+                        try {
+                            await transaction.commit();
+                            var fechaactualizacion = formatDateRegistrar(new Date());
+                            var actualizarfecha = await new Promise(resolve => { administracion.actualizarfechamigracion(fechaactualizacion, (err, valor) => { resolve(valor); }) });
+                            await pool.close();
+                            console.log('Migración correcta - Registros ingresados: ' + cantreg + ' / Registros modificados: ' + cantmod)
+                        } catch (error) {
+                            await transaction.rollback();
+                            await pool.close();
+                            var fechaerror = formatDateRegistrar(new Date());
+                            var registrarerror = await new Promise(resolve => { administracion.registrarerrormigracion(error, fechaerror, (err, valor) => { resolve(valor); }) });
+                            console.error('Alguna consulta no tiene datos. La transacción ha sido revertida.');
+                        }
+                    } else {
+                        console.log('No existe información de los estudiantes matriculados')
+                    }
+
+                }
+                else {
+                    console.log('No existe información de los estudiantes matriculados')
+                }
+            } else {
+                console.log('No existe un periodo vigente')
+            }
+
+        }
+        else {
+            console.log('No existen carreras en la base master')
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+    }
+}
+
+async function obtenerdatoscentralizada(listamatriculados) {
+    const credentials = {
+        "user": "sistema",
+        "password": "Sistemas",
+        "host": "172.17.102.14",
+        "database": "centralizacion_db",
+        "port": "3311"
+    };
+
+    const poolpg = new Pool(credentials);
+
+    var listapersonalizada = []
+    var cont = 1
+    for (var i = 0; i < listamatriculados.length; i++) {
+        var cedula = listamatriculados[i].strCedula;
+        cedula = cedula.replace('-', '')
+        var personapersonalizada = await poolpg.query("SELECT p.per_id, d.pid_valor, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia, case when (split_part(p.per_procedencia,'|',2)!='1') THEN concat((select pro_nombre from central.provincia where pro_id = CAST(split_part(p.per_procedencia,'|',1) AS integer)),'/',(select ciu_nombre from central.ciudad where ciu_id = CAST(split_part(p.per_procedencia,'|',2) AS integer)),'/', (select prq_nombre from central.parroquia where prq_id = CAST(split_part(p.per_procedencia,'|',3) AS integer))) "
+            + " else concat((select pai_nombre from central.pais where pai_id = CAST(split_part(p.per_procedencia,'|',1) AS integer)),'/',(select ciu_nombre from central.ciudad where ciu_id = CAST(split_part(p.per_procedencia,'|',2) AS integer)),'/', (select prq_nombre from central.parroquia where prq_id = 1)) end as procedencia, p.per_conyuge, p.per_idconyuge "
+            + "FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id"
+            + " WHERE d.pid_valor= '" + cedula + "'  ");
+        //var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonareportematriculados(cedula, (err, valor) => { resolve(valor); }) });
+        //console.log(personapersonalizada.length)
+        if ((personapersonalizada != null) && (personapersonalizada.rows[0] != undefined)) {
+            var personacentralizada = personapersonalizada.rows[0]
+            var nacionalidad = ''
+            var datosprocedencia = personacentralizada.procedencia.split('/')
+            var procedencia = ''
+            var provincia = 'NO ESPECIFICADO'
+            var ciudad = 'NO ESPECIFICADO'
+            var parroquia = 'NO ESPECIFICADO'
+
+            if (datosprocedencia[1] == 'NO ESPECIFICADO') {
+                nacionalidad = datosprocedencia[0]
+            }
+            else {
+                nacionalidad = 'ECUADOR'
+                provincia = datosprocedencia[0]
+                ciudad = datosprocedencia[1]
+                parroquia = datosprocedencia[2]
+
+            }
+            var objestudiante = {
+                contador: cont,
+                cedula: personacentralizada.pid_valor,
+                nombres: personacentralizada.per_nombres + ' ' + personacentralizada.per_primerApellido + ' ' + personacentralizada.per_segundoApellido,
+                codcarrera: listamatriculados[i].codcarrera,
+                carrera: listamatriculados[i].Carrera,
+                codfacultad: listamatriculados[i].codfacultad,
+                facultad: listamatriculados[i].Facultad,
+                sede: listamatriculados[i].sede,
+                periodo: listamatriculados[i].strCodPeriodo,
+                nacionalidad: nacionalidad,
+                provincia: provincia,
+                ciudad: ciudad,
+                parroquia: parroquia,
+                sexo: personacentralizada.sexo,
+                genero: personacentralizada.gen_nombre
+
+            }
+            listapersonalizada.push(objestudiante)
+            cont = cont + 1
+        } else {
+            var sexo = ''
+            var genero = ''
+            if (listamatriculados[i].strCodSexo == 'MAS') {
+                sexo = 'HOMBRE'
+                genero = 'MASCULINO'
+            }
+            else {
+                sexo = 'MUJER'
+                genero = 'FEMENINO'
+            }
+            var objmatriculado = {
+                contador: cont,
+                cedula: cedula,
+                nombres: listamatriculados[i].strNombres + ' ' + listamatriculados[i].strApellidos,
+                codcarrera: listamatriculados[i].codcarrera,
+                carrera: listamatriculados[i].Carrera,
+                codfacultad: listamatriculados[i].codfacultad,
+                facultad: listamatriculados[i].Facultad,
+                sede: listamatriculados[i].sede,
+                periodo: listamatriculados[i].strCodPeriodo,
+                nacionalidad: listamatriculados[i].strNacionalidad,
+                provincia: 'NO ESPECIFICADO',
+                ciudad: 'NO ESPECIFICADO',
+                parroquia: 'NO ESPECIFICADO',
+                sexo: sexo,
+                genero: genero
+
+            }
+            listapersonalizada.push(objmatriculado)
+            cont = cont + 1
+        }
+    }
+    await poolpg.end();
+    return (listapersonalizada)
+}
+
+/// programacion 1 dia en el mes   var task = cron.schedule('0 0 1 * *', () => {
+/// '*/10 * * * *'    tiempo de ejecucion cada 10 minutos
+/// '0 * * * *'   configuracion del cron, para que se ejecute cada hora
+var task = cron.schedule('0 * * * *', async function () {
+    console.log('Cron de migración de datos')
+    var regactivo = await new Promise(resolve => { administracion.configmigracion((err, valor) => { resolve(valor); }) });
+    if ((regactivo != null) && (regactivo.length > 0)) {
+        var fechasistema = formatDate(new Date())
+        if (regactivo[0].periodico == 1) {
+            var fechamigrada = new Date(regactivo[0].fechaactualizacion)
+            var diasmigrar = regactivo[0].dias
+            fechamigrada.setDate(fechamigrada.getDate() + diasmigrar);
+            var fechaparamigrar = formatDateTime(fechamigrada)
+            if (fechasistema == fechaparamigrar) {
+                console.log('Migracion Periodica')
+                console.log('Fecha actual: ' + fechasistema + ' Fechamigracion: ' + fechaparamigrar)
+                console.log('Se va a proceder a migrar los estudiantes matriculados a la base de indicadores')
+                migrarmatriculadosporperiodomod();
+            }
+        }
+        else {
+            var fechamigrar = formatDateTime(regactivo[0].tiempocron)
+            if (fechasistema == fechamigrar) {
+                console.log('Fecha actual: ' + fechasistema + ' Fechamigracion: ' + fechamigrar)
+                console.log('Se va a proceder a migrar los estudiantes matriculados a la base de indicadores')
+                migrarmatriculadosporperiodomod();
+            }
+        }
+    }
+}, {
+    scheduled: false
+});
+task.start();
+
 
 router.get('/periodovigente', async (req, res) => {
     try {
@@ -1140,6 +1516,39 @@ function formatDate(date) {
         ].join(':')
     );
 }
+
+function formatDateRegistrar(date) {
+    return (
+        [
+            date.getFullYear(),
+            padTo2Digits(date.getMonth() + 1),
+            padTo2Digits(date.getDate()),
+        ].join('-') +
+        ' ' +
+        [
+            padTo2Digits(date.getHours()),
+            padTo2Digits(date.getMinutes()),
+        ].join(':') + ':00'
+    );
+}
+
+function formatDateTime(date) {
+    date.setMinutes(date.getMinutes() + date.getTimezoneOffset())
+    return (
+        [
+            date.getFullYear(),
+            padTo2Digits(date.getMonth() + 1),
+            padTo2Digits(date.getDate()),
+        ].join('-') +
+        ' ' +
+        [
+            padTo2Digits(date.getHours()),
+            padTo2Digits(date.getMinutes()),
+            padTo2Digits(date.getSeconds()),
+        ].join(':')
+    );
+}
+
 function formatofechasinhora(date) {
     return (
         [

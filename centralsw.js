@@ -11,12 +11,13 @@ const dinardap = require('./rutas/rutadinardap');
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
+var cron = require('node-cron');
 
 var connection = new sql.ConnectionPool(config);
 connection.connect(function (err) {
     if (err) {
         console.error('Error en la Conexion de la Base de Datos', err.stack)
-    } else {        
+    } else {
         console.log('Conexion Base de Datos CENTRALIZADA')
     }
 });
@@ -66,7 +67,6 @@ app.use(function (req, resp, next) {
         return next();
     }
 });
-
 
 http.createServer(app).listen(8098)
 https.createServer(options, app).listen(port);

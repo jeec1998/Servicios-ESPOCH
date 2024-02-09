@@ -220,15 +220,15 @@ module.exports.periodovigentemaster = function (callback) {
 }
 
 
-module.exports.ObtenerMatriculasdadocarrerayperiodo = function (carrera, facultad, basedatos, periodo, callback) {
+module.exports.ObtenerMatriculasdadocarrerayperiodo = function (carrera, codcarrera, facultad, codfacultad, sede, basedatos, periodo, callback) {
     var conex = db;
     conex.database = basedatos;
     var conn = new sql.ConnectionPool(conex);
     var req = new sql.Request(conn);
     var sentencia;
     sentencia = "select  sintCodigo, strCodPeriodo, strCodEstud, strCedula, strNacionalidad, strCodNivel, strAutorizadaPor, dtFechaAutorizada,"
-        + " strCreadaPor, dtFechaCreada, strCodEstado, cast ('" + carrera + "' as varchar(150)) as Carrera,"
-        + " cast ('" + facultad + "' as varchar(150)) as Facultad  from [" + basedatos + "].[dbo].matriculas "
+        + " strCreadaPor, dtFechaCreada, strCodEstado, cast ('" + carrera + "' as varchar(150)) as Carrera,'" + codcarrera + "' as codcarrera, "
+        + " cast ('" + facultad + "' as varchar(150)) as Facultad, '" + codfacultad + "' as codfacultad, '" + sede + "' as sede from [" + basedatos + "].[dbo].matriculas "
         + " inner join [" + basedatos + "].[dbo].Estudiantes on matriculas.strCodEstud=Estudiantes.strCodigo where (strCodPeriodo = '" + periodo + "') and strCodEstado='DEF'"
     try {
         conn
@@ -256,6 +256,177 @@ module.exports.ObtenerMatriculasdadocarrerayperiodo = function (carrera, faculta
     }
 };
 
+module.exports.registrotablamatriculadosindicadores = function (basedatos, cedula, periodo, callback) {
+    var conex = db;
+    conex.database = basedatos;
+    var conn = new sql.ConnectionPool(conex);
+    var req = new sql.Request(conn);
+    var sentencia;
+    sentencia = "select  *  from [" + basedatos + "].[dbo].[Academico_Central_EstudiantesMatriculados] where (codperiodo = '" + periodo + "') and (cedula='" + cedula + "')"
+    try {
+        conn
+            .connect()
+            .then(() => {
+                req.query(sentencia, (err, recordset) => {
+                    if (err) {
+                        console.error("Fallo en la Consulta método registrotablamatriculadosindicadores: ", err.stack);
+                        conn.close();
+                        callback(null, null);
+                    } else {
+                        conn.close();
+                        callback(null, recordset.recordset);
+                    }
+                });
+            })
+            .catch((err) => {
+                console.log("método registrotablamatriculadosindicadores: " + err.stack);
+                conn.close();
+                callback(null, null);
+            });
+    } catch (error) {
+        conn.close();
+        callback(null, null);
+    }
+};
+
+module.exports.registrarestudiantebdindicadores = function (basedatos, objestudiante, callback) {
+    var conex = db;
+    conex.database = basedatos;
+    var conn = new sql.ConnectionPool(conex);
+    var req = new sql.Request(conn);
+    var sentencia;
+    sentencia = "INSERT INTO [dbo].[Academico_Central_EstudiantesMatriculados] ( cedula, codperiodo, apellidosynombres, codcarrera, carrera, codfacultad, facultad, sede, paisorigen, provincia, ciudad, parroquia, sexo, genero) "
+        + "VALUES('" + objestudiante.cedula + "', '" + objestudiante.periodo + "', '" + objestudiante.nombres + "', '" + objestudiante.codcarrera + "','" + objestudiante.carrera + "', '" + objestudiante.codfacultad + "', '" + objestudiante.facultad + "', '" + objestudiante.sede + "', '" + objestudiante.nacionalidad + "','" + objestudiante.provincia + "','" + objestudiante.ciudad + "','" + objestudiante.parroquia + "', '" + objestudiante.sexo + "','" + objestudiante.genero + "');";
+    try {
+        conn
+            .connect()
+            .then(() => {
+                req.query(sentencia, (err, recordset) => {
+                    if (err) {
+                        console.error("Fallo en la Consulta método registrarestudiantebdindicadores: ", err.stack);
+                        conn.close();
+                        callback(null, null);
+                    } else {
+                        conn.close();
+                        callback(null, true);
+                    }
+                });
+            })
+            .catch((err) => {
+                console.log("método registrarestudiantebdindicadores: " + err.stack);
+                conn.close();
+                callback(null, null);
+            });
+    } catch (error) {
+        conn.close();
+        callback(null, null);
+    }
+};
+
+module.exports.modificarestudiantebdindicadores = function (basedatos, objestudiante, callback) {
+    var conex = db;
+    conex.database = basedatos;
+    var conn = new sql.ConnectionPool(conex);
+    var req = new sql.Request(conn);
+    var sentencia;
+    sentencia = "UPDATE [dbo].[Academico_Central_EstudiantesMatriculados] SET apellidosynombres='" + objestudiante.nombres + "', codcarrera='" + objestudiante.codcarrera + "', carrera='" + objestudiante.carrera + "', codfacultad='" + objestudiante.codfacultad + "', facultad='" + objestudiante.facultad + "', sede='" + objestudiante.sede + "', paisorigen='" + objestudiante.nacionalidad + "', provincia='" + objestudiante.provincia + "', ciudad='" + objestudiante.ciudad + "', parroquia='" + objestudiante.parroquia + "', sexo='" + objestudiante.sexo + "', genero='" + objestudiante.genero + "' "
+        + "WHERE cedula='" + objestudiante.cedula + "' and codperiodo='" + objestudiante.periodo + "'"
+    try {
+        conn
+            .connect()
+            .then(() => {
+                req.query(sentencia, (err, recordset) => {
+                    if (err) {
+                        console.error("Fallo en la Consulta método modificarestudiantebdindicadores: ", err.stack);
+                        conn.close();
+                        callback(null, null);
+                    } else {
+                        conn.close();
+                        callback(null, true);
+                    }
+                });
+            })
+            .catch((err) => {
+                console.log("método modificarestudiantebdindicadores: " + err.stack);
+                conn.close();
+                callback(null, null);
+            });
+    } catch (error) {
+        conn.close();
+        callback(null, null);
+    }
+};
+
+module.exports.configmigracion = function (callback) {
+    var conn = new sql.ConnectionPool(db);
+    var req = new sql.Request(conn);
+    var sentencia;
+    sentencia = "SELECT * FROM [Informacion_Institucional].[dbo].[configmigracion] where [blnactivo]=1 ";
+    conn.connect()
+        .then(() => {
+            req.query(sentencia, (err, recordset) => {
+                if (err) {
+                    callback(null, null)
+                    console.error('Fallo en la Consulta', err.stack)
+                } else {
+                    callback(null, recordset.recordset);
+                }
+                conn.close();
+            })
+        })
+        .catch((err) => {
+            callback(null, null)
+            console.log('Error configmigracion: ' + err.stack);
+        });
+}
+
+module.exports.actualizarfechamigracion = function (fechaactualizacion, callback) {
+    var conn = new sql.ConnectionPool(db);
+    var req = new sql.Request(conn);
+    var sentencia;
+    sentencia = "UPDATE [Informacion_Institucional].[dbo].[configmigracion] SET fechaactualizacion='" + fechaactualizacion + "' WHERE blnactivo=1";
+    console.log(sentencia)
+    conn.connect()
+        .then(() => {
+            req.query(sentencia, (err, recordset) => {
+                if (err) {
+                    callback(null, false)
+                    console.error('Fallo en la Consulta actualizarfechamigracion: ', err.stack)
+                } else {
+                    callback(null, true);
+                }
+                conn.close();
+            })
+        })
+        .catch((err) => {
+            callback(null, false)
+            console.log('Error actualizarfechamigracion: ' + err.stack);
+        });
+}
+
+module.exports.registrarerrormigracion = function (error, fecha, callback) {
+    var conn = new sql.ConnectionPool(db);
+    var req = new sql.Request(conn);
+    var sentencia;
+    sentencia = "INSERT INTO [Informacion_Institucional].[dbo].[errores] ([error],[fecha]) VALUES ('" + error + "','" + fecha + "')";
+    console.log(sentencia)
+    conn.connect()
+        .then(() => {
+            req.query(sentencia, (err, recordset) => {
+                if (err) {
+                    callback(null, false)
+                    console.error('Fallo método registrarerrormigracion: ', err.stack)
+                } else {
+                    callback(null, true);
+                }
+                conn.close();
+            })
+        })
+        .catch((err) => {
+            callback(null, false)
+            console.log('Error registrarerrormigracion: ' + err.stack);
+        });
+}
 
 
 

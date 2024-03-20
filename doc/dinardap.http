@@ -3,7 +3,7 @@
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0603520768
-GET http://localhost:8098/rutadinardap/obtenerpersona/0650296841
+GET http://localhost:8098/rutadinardap/obtenerpersona/1756723431
 
 ###consumo de nacionalidades
 GET http://localhost:8098/rutaCentral/listanacionalidades
@@ -58,8 +58,8 @@ GET http://localhost:8098/rutaCentral/objetopersonalizadodadoid/24443
 //GET http://localhost:8098/rutadinardap/procesonombres/DE LA CRUZ SANTACRUZ NATALY DE LOS ANGELES
 //GET http://localhost:8098/rutadinardap/procesonombres/SANTACRUZ DE LA CRUZ NATALY DE LOS ANGELES
 //GET http://localhost:8098/rutadinardap/procesonombres/ORTIZ CUEVAS ANGEL
-GET http://localhost:8098/rutadinardap/procesonombres/MORALES DE LA NUEZ ANTONIO JOSE
-//GET http://localhost:8098/rutadinardap/procesonombres/CEPA RUIZ ANA SOFIA
+//GET http://localhost:8098/rutadinardap/procesonombres/MORALES DE LA NUEZ ANTONIO JOSE
+GET http://localhost:8098/rutadinardap/procesonombres/CEPA RUIZ ANA SOFIA
 
 ###buscarregistrospornombresyfechadenacimiento
 GET http://localhost:8098/rutadinardap/buscarRegistros/0603520768
@@ -75,3 +75,6 @@ GET http://localhost:8098/rutaCentral/objetopersonalizadodadoemail/monserrath.pa
 
 ### Servicio Admisiones - actualizar el estado de la persona dado la cédula
 GET http://localhost:8098/rutaCentral/actualizarestadopersona/060352076856
+
+### Servicio que actualiza la informacion de la persona consumiendo el registro civil
+GET http://localhost:8098/rutadinardap/actualizardatosmatriculado/1725672396

@@ -11,6 +11,7 @@ const { Console } = require('console');
 const urlAcademico = require('../config/urlAcademico');
 const centralizada = require('../modelo/centralizada');
 const administracion = require('../modelo/administracion');
+const sql = require('mssql');
 const e = require('express');
 const base64 = require('base64-js');
 const ExcelJS = require('exceljs');
@@ -329,7 +330,7 @@ router.get('/actualizardatosmatriculadosenlacentralizada', async (req, res) => {
             if (periodovigente != null) {
                 for (carrera of datosregistro) {
                     var matriculadoscarrera = await new Promise((resolve) => {
-                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.Facultad, carrera.strBaseDatos, periodovigente[0].strCodigo, (err, valor) => {
+                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.strCodigo, carrera.Facultad, carrera.codigofacultad, carrera.Sede, carrera.strBaseDatos, periodovigente[0].strCodigo, (err, valor) => {
                             resolve(valor);
                         });
                     });
@@ -340,6 +341,122 @@ router.get('/actualizardatosmatriculadosenlacentralizada', async (req, res) => {
                     }
                     else {
                         console.log('No existen estudiantes matriculados en la carrera: ' + carrera.Carrera + ' base de datos:' + carrera.strBaseDatos + ' en el periodo: ' + periodovigente[0].strCodigo)
+                    }
+                }
+                console.log('Longitud de la lista de matriculados: ' + listamatriculados.length)
+                if (listamatriculados != null) {
+                    var listapersonalizada = []
+                    for (var i = 0; i < listamatriculados.length; i++) {
+                        var cedula = listamatriculados[i].strCedula;
+                        cedula = cedula.replace('-', '')
+                        var datosregistrocivil = await new Promise((resolve) => {
+                            consumoservicioregistrocivil(cedula, (err, valor) => {
+                                resolve(valor);
+                            });
+                        });
+                        if (datosregistrocivil != null) {
+                            var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                            //console.log(personapersonalizada.length)
+                            if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
+                                //modificar los datos en la centralizada 
+                                var actualizarpersona = await new Promise(resolve => { centralizada.actualizarpersonaprocedencia(datosregistrocivil, personapersonalizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                                if (actualizarpersona) {
+                                    var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersonalizado(datosregistrocivil.per_nacionalidad, datosregistrocivil.nac_reqvisa, personapersonalizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                                    if (actualizanacionalidad) {
+                                        console.log('Datos de la persona actualizados correctamente N° ' + i)
+                                    }
+                                    else {
+                                        console.log('No se ha actualizado la nacionalidad del estudiante: ' + cedula)
+                                    }
+                                }
+                                else {
+                                    console.log('No se ha actualizado la información del estudiante: ' + cedula)
+                                }
+                            }
+                            else {
+                                //registrar la persona en la centralizada
+                                var ingresopersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(datosregistrocivil, (err, valor) => { resolve(valor); }) });
+                                if (ingresopersona) {
+                                    var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(datosregistrocivil.per_nombres, datosregistrocivil.per_primerapellido, datosregistrocivil.per_segundoapellido, datosregistrocivil.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
+                                    if (persona.length > 0) {
+                                        var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonal(cedula, persona[0].per_id, (err, valor) => { resolve(valor); }) });
+                                        if (documentopersonalreg) {
+                                            ////pendiente registrar en la tabla domicilio y nacionalidad
+                                            var ingresodireccion = await new Promise(resolve => { centralizada.ingresoDireccionPersona(persona[0].per_id, datosregistrocivil.dir_calleprincipal, datosregistrocivil.dir_numcasa, datosregistrocivil.lugarprocedencia_id, (err, valor) => { resolve(valor); }) });
+                                            if (ingresodireccion) {
+                                                var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, datosregistrocivil.nac_reqvisa, datosregistrocivil.per_nacionalidad, (err, valor) => { resolve(valor); }) });
+                                                if (ingresoNacionalidad) {
+                                                    console.log('Registro ingresado correctamente')
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonadatoscompletos(cedula, (err, valor) => { resolve(valor); }) });
+                            listapersonalizada.push(personapersonalizada[0])
+                        }
+                        else {
+                            console.log('No tiene informacion en el registro civil el estudiante: ' + listamatriculados[i].strCedula)
+                        }
+                    }
+                    return res.json({
+                        success: true,
+                        matriculados: listapersonalizada
+                    });
+                }
+                else {
+                    return res.json({
+                        success: false,
+                        mensaje: 'No existe información de los estudiantes matriculados'
+                    });
+                }
+            } else {
+                return res.json({
+                    success: false,
+                    mensaje: 'No existe un periodo vigente'
+                });
+            }
+        } else {
+            return res.json({
+                success: false,
+                mensaje: 'No existen carreras en la base master'
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+////metodo para actualizar datos de los estudiantes matriculados consumiendo informacion del registro civil dado idperiodo
+router.get('/actualizardatosmatriculadosenlacentralizada/:periodo', async (req, res) => {
+    const codperiodo = req.params.periodo;
+    try {
+        var listamatriculados = []
+        var datosregistro = await new Promise(resolve => { administracion.listacarrerasmaster((err, valor) => { resolve(valor); }) });
+        if (datosregistro != null) {
+            var periodo = await new Promise((resolve) => {
+                administracion.periodomasterdadocodigo(codperiodo, (err, valor) => {
+                    resolve(valor);
+                });
+            });
+            if (periodo != null) {
+                for (carrera of datosregistro) {
+                    var matriculadoscarrera = await new Promise((resolve) => {
+                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.strCodigo, carrera.Facultad, carrera.codigofacultad, carrera.Sede, carrera.strBaseDatos, periodo[0].strCodigo, (err, valor) => {
+                            resolve(valor);
+                        });
+                    });
+                    if (matriculadoscarrera != null) {
+                        for (var matricula of matriculadoscarrera.recordset) {
+                            listamatriculados.push(matricula)
+                        }
+                    }
+                    else {
+                        console.log('No existen estudiantes matriculados en la carrera: ' + carrera.Carrera + ' base de datos:' + carrera.strBaseDatos + ' en el periodo: ' + periodo[0].strCodigo)
                     }
                 }
                 console.log('Longitud de la lista de matriculados: ' + listamatriculados.length)
@@ -632,26 +749,29 @@ router.get('/listamatriculadosactualizados', async (req, res) => {
     }
 });
 
-//// migración de estudiantes matriculados a la base de indicadores
-async function migrarmatriculadosporperiodo() {
+//// reporte de estudiantes matriculados dado el periodo consumiendo la centralizada
+router.get('/listamatriculadosactualizadosporperiodo/:periodo', async (req, res) => {
+    const codperiodo = req.params.periodo
+    var conex = bd;
+    const pool = new sql.ConnectionPool(conex);
+    await pool.connect();
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
     try {
         var listamatriculados = []
-        var datosregistro = await new Promise(resolve => { administracion.listacarrerasmaster((err, valor) => { resolve(valor); }) });
+        var datosregistro = await ejecutarConsultaSQLcontransacion(transaction, "SELECT Carreras.strCodigo, Carreras.strBaseDatos, Carreras.strCodEstado, Escuelas.strNombre, Facultades.strNombre AS Facultad, Facultades.strCodigo as codigofacultad, Carreras.strNombre AS Carrera, strSede as Sede"
+            + " FROM Carreras INNER JOIN Escuelas ON Carreras.strCodEscuela = Escuelas.strCodigo INNER JOIN Facultades ON Escuelas.strCodFacultad = Facultades.strCodigo ");
         if (datosregistro != null) {
-            var periodovigente = await new Promise((resolve) => {
-                administracion.periodovigentemaster((err, valor) => {
-                    resolve(valor);
-                });
-            });
+            var periodovigente = await ejecutarConsultaSQLcontransacion(transaction, "SELECT * FROM dbo.[Periodos] WHERE  strCodigo='" + codperiodo + "'");
             if (periodovigente != null) {
                 for (carrera of datosregistro) {
-                    var matriculadoscarrera = await new Promise((resolve) => {
-                        administracion.ObtenerMatriculasdadocarrerayperiodo(carrera.Carrera, carrera.strCodigo, carrera.Facultad, carrera.codigofacultad, carrera.Sede, carrera.strBaseDatos, periodovigente[0].strCodigo, (err, valor) => {
-                            resolve(valor);
-                        });
-                    });
+                    var matriculadoscarrera = await ejecutarConsultaSQLcontransacion(transaction, "select  sintCodigo, strCodPeriodo, strCodEstud, strCedula, strNacionalidad, strCodNivel, strAutorizadaPor, dtFechaAutorizada,"
+                        + " strCreadaPor, dtFechaCreada, strCodEstado, cast ('" + carrera.Carrera + "' as varchar(150)) as Carrera,'" + carrera.strCodigo + "' as codcarrera, "
+                        + " cast ('" + carrera.Facultad + "' as varchar(150)) as Facultad, '" + carrera.codigofacultad + "' as codfacultad, '" + carrera.Sede + "' as sede from [" + carrera.strBaseDatos + "].[dbo].matriculas "
+                        + " inner join [" + carrera.strBaseDatos + "].[dbo].Estudiantes on matriculas.strCodEstud=Estudiantes.strCodigo where (strCodPeriodo = '" + codperiodo + "') and strCodEstado='DEF'");
+
                     if (matriculadoscarrera != null) {
-                        for (var matricula of matriculadoscarrera.recordset) {
+                        for (var matricula of matriculadoscarrera) {
                             listamatriculados.push(matricula)
                         }
                     }
@@ -659,6 +779,7 @@ async function migrarmatriculadosporperiodo() {
                         console.log('No existen estudiantes matriculados en la carrera: ' + carrera.Carrera + ' base de datos:' + carrera.strBaseDatos + ' en el periodo: ' + periodovigente[0].strCodigo)
                     }
                 }
+                console.log('Longitud de la lista de matriculados: ' + listamatriculados.length)
                 if (listamatriculados != null) {
                     var listapersonalizada = []
                     var cont = 1
@@ -670,6 +791,12 @@ async function migrarmatriculadosporperiodo() {
 
                         if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
                             var nacionalidad = ''
+                            /*if (personapersonalizada[0].nac_id != null) {
+                                nacionalidad = personapersonalizada[0].nac_nombre
+                            }
+                            else {
+                                nacionalidad = listamatriculados[i].strNacionalidad
+                            }*/
                             var datosprocedencia = personapersonalizada[0].procedencia.split('/')
                             var procedencia = ''
                             var provincia = 'NO ESPECIFICADO'
@@ -684,6 +811,7 @@ async function migrarmatriculadosporperiodo() {
                                 provincia = datosprocedencia[0]
                                 ciudad = datosprocedencia[1]
                                 parroquia = datosprocedencia[2]
+                                //procedencia = datosprocedencia[0] + '/' + datosprocedencia[1] + '/' + datosprocedencia[2]
 
                             }
                             var objestudiante = {
@@ -706,53 +834,72 @@ async function migrarmatriculadosporperiodo() {
                             }
                             listapersonalizada.push(objestudiante)
                             cont = cont + 1
-                            /*if (i == 100) {
-                                i = listamatriculados.length
-                            }*/
                         }
                     }
                     if (listapersonalizada.length > 0) {
-                        var cantreg = 0;
-                        var cantmod = 0;
-                        for (var registro of listapersonalizada) {
-                            var registrado = await new Promise(resolve => { administracion.registrotablamatriculadosindicadores('Informacion_Institucional', registro.cedula, registro.periodo, (err, valor) => { resolve(valor); }) });
-                            if ((registrado != null) && (registrado.length > 0)) {
-                                var modificar = await new Promise(resolve => { administracion.modificarestudiantebdindicadores('Informacion_Institucional', registro, (err, valor) => { resolve(valor); }) });
-                                if (modificar == true) {
-                                    cantmod = cantmod + 1
-                                }
-                            }
-                            else {
-                                var registrar = await new Promise(resolve => { administracion.registrarestudiantebdindicadores('Informacion_Institucional', registro, (err, valor) => { resolve(valor); }) });
-                                if (registrar == true) {
-                                    cantreg = cantreg + 1
-                                }
-                            }
-                        }
-                        console.log('Migración correcta - Registros ingresados: ' + cantreg + ' / Registros modificados: ' + cantmod)
+                        var reportebase64 = await new Promise((resolve) => {
+                            reportematriculadosExcel(listapersonalizada, (err, valor) => {
+                                resolve(valor);
+                            });
+                        });
+                        return res.json({
+                            success: true,
+                            reporte: reportebase64
+                        });
                     } else {
-                        console.log('No existe información de los estudiantes matriculados')
+                        return res.json({
+                            success: false,
+                            mensaje: 'No existe información de los estudiantes matriculados'
+                        });
                     }
 
                 }
                 else {
-                    console.log('No existe información de los estudiantes matriculados')
+                    return res.json({
+                        success: false,
+                        mensaje: 'No existe información de los estudiantes matriculados'
+                    });
                 }
+                return res.json({
+                    success: true,
+                    matriculados: listapersonalizada
+                });
             } else {
-                console.log('No existe un periodo vigente')
+                return res.json({
+                    success: false,
+                    mensaje: 'No existe un periodo vigente'
+                });
             }
 
         }
         else {
-            console.log('No existen carreras en la base master')
+            return res.json({
+                success: false,
+                mensaje: 'No existen carreras en la base master'
+            });
         }
     } catch (err) {
         console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
     }
-}
+});
 
-//// migración de estudiantes matriculados a la base de indicadores --- servicio de alta concurrencia
-async function migrarmatriculadosporperiodomod() {
+router.get('/migrarestudiantesindicadoresdadoelperiodo/:periodo', async (req, res) => {
+    const codperiodo = req.params.periodo;
+    try {
+        migrarmatriculadosdadoelcodigodelperiodo(codperiodo);
+    } catch (err) {
+        console.log('Error migrarestudiantesindicadoresdadoelperiodo: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+/// migración de estudiantes matriculados a la base de indicadores dado el periodo --- servicio de alta concurrencia
+async function migrarmatriculadosdadoelcodigodelperiodo(codperiodo) {
     let lst = [];
     const sql = require('mssql');
     try {
@@ -797,7 +944,7 @@ async function migrarmatriculadosporperiodomod() {
                 day = "0" + day
             }
             fecha = year + "-" + month + "-" + day
-            var periodovigente = await ejecutarConsultaSQLcontransacion(transaction, "SELECT * FROM dbo.[Periodos] WHERE  convert(datetime,'" + fecha + "T00:00:00.000" + "') BETWEEN [dtFechaInic] AND [dtFechaFin]");
+            var periodovigente = await ejecutarConsultaSQLcontransacion(transaction, "SELECT * FROM dbo.[Periodos] WHERE  strCodigo='" + codperiodo + "'");
             if (periodovigente != null) {
                 var periodo = periodovigente.recordset[0]
                 var listacarreras = datosregistro.recordset
@@ -971,41 +1118,6 @@ async function obtenerdatoscentralizada(listamatriculados) {
     await poolpg.end();
     return (listapersonalizada)
 }
-
-/// programacion 1 dia en el mes   var task = cron.schedule('0 0 1 * *', () => {
-/// '*/10 * * * *'    tiempo de ejecucion cada 10 minutos
-/// '0 * * * *'   configuracion del cron, para que se ejecute cada hora
-var task = cron.schedule('0 * * * *', async function () {
-    console.log('Cron de migración de datos')
-    var regactivo = await new Promise(resolve => { administracion.configmigracion((err, valor) => { resolve(valor); }) });
-    if ((regactivo != null) && (regactivo.length > 0)) {
-        var fechasistema = formatDate(new Date())
-        if (regactivo[0].periodico == 1) {
-            var fechamigrada = new Date(regactivo[0].fechaactualizacion)
-            var diasmigrar = regactivo[0].dias
-            fechamigrada.setDate(fechamigrada.getDate() + diasmigrar);
-            var fechaparamigrar = formatDateTime(fechamigrada)
-            if (fechasistema == fechaparamigrar) {
-                console.log('Migracion Periodica')
-                console.log('Fecha actual: ' + fechasistema + ' Fechamigracion: ' + fechaparamigrar)
-                console.log('Se va a proceder a migrar los estudiantes matriculados a la base de indicadores')
-                migrarmatriculadosporperiodomod();
-            }
-        }
-        else {
-            var fechamigrar = formatDateTime(regactivo[0].tiempocron)
-            if (fechasistema == fechamigrar) {
-                console.log('Fecha actual: ' + fechasistema + ' Fechamigracion: ' + fechamigrar)
-                console.log('Se va a proceder a migrar los estudiantes matriculados a la base de indicadores')
-                migrarmatriculadosporperiodomod();
-            }
-        }
-    }
-}, {
-    scheduled: false
-});
-task.start();
-
 
 router.get('/periodovigente', async (req, res) => {
     try {
@@ -1333,6 +1445,7 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                     if (atr.campo == "nombre") {
                                         const nombres = atr.valor;
                                         var estructuranombres = await new Promise(resolve => { actualizaciondenombrescentral(nombres, (err, valor) => { resolve(valor); }) });
+                                        console.log(estructuranombres)
                                         if (estructuranombres != null) {
                                             primerApellido = estructuranombres.per_primerapellido
                                             segundoApellido = estructuranombres.per_segundoapellido
@@ -1947,7 +2060,8 @@ async function actualizaciondenombrescentral(nombrecompleto, callback) {
             for (var i = 0; i < nombres.length; i++) {
                 //if ((nombres[i].includes('DE')) || (nombres[i].includes('DEL')) || (nombres[i].includes('EL')) || (nombres[i].includes('LA')) || (nombres[i].includes('LOS')) || (nombres[i].includes('LAS'))) {
                 if (nombres[i].length <= 3) {
-                    if ((nombres[i].includes('DE')) || (nombres[i].includes('DEL')) || (nombres[i].includes('EL')) || (nombres[i].includes('LA')) || (nombres[i].includes('LOS')) || (nombres[i].includes('LAS'))) {
+                    //if ((nombres[i].includes('DE')) || (nombres[i].includes('DEL')) || (nombres[i].includes('EL')) || (nombres[i].includes('LA')) || (nombres[i].includes('LOS')) || (nombres[i].includes('LAS'))) {
+                    if ((nombres[i] == 'DE') || (nombres[i] == 'DEL') || (nombres[i] == 'EL') || (nombres[i] == 'LA') || (nombres[i] == 'LOS') || (nombres[i] == 'LAS')) {
                         contpalabracorta = true
                         if (nombres[i + 1].length <= 3) {
                             contpalabracorta = true

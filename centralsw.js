@@ -12,13 +12,14 @@ var fs = require('fs');
 var http = require('http');
 var https = require('https');
 var cron = require('node-cron');
+const dotenv = require("dotenv").config();
 
 var connection = new sql.ConnectionPool(config);
 connection.connect(function (err) {
     if (err) {
         console.error('Error en la Conexion de la Base de Datos', err.stack)
     } else {
-        console.log('Conexion Base de Datos CENTRALIZADA')
+        console.log('Conexion Base de Datos '+process.env.BASEDATOS)
     }
 });
 

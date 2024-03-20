@@ -219,6 +219,29 @@ module.exports.periodovigentemaster = function (callback) {
         });
 }
 
+module.exports.periodomasterdadocodigo = function (codperiodo, callback) {
+    var conn = new sql.ConnectionPool(baseMaster);
+    var req = new sql.Request(conn);
+    var sentencia;
+    sentencia = "SELECT * FROM dbo.[Periodos] WHERE  strCodigo='" + codperiodo + "'";
+    conn.connect()
+        .then(() => {
+            req.query(sentencia, (err, recordset) => {
+                if (err) {
+                    console.error('Fallo en la Consulta método periodomasterdadocodigo: ', err.stack)
+                    callback(err, null)
+                } else {
+                    callback(null, recordset.recordset);
+                }
+                conn.close();
+            })
+        })
+        .catch((err) => {
+            console.log('Error método periodomasterdadocodigo: ' + err.stack);
+            callback(err, null)
+        });
+}
+
 
 module.exports.ObtenerMatriculasdadocarrerayperiodo = function (carrera, codcarrera, facultad, codfacultad, sede, basedatos, periodo, callback) {
     var conex = db;

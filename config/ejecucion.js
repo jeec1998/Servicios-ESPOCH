@@ -39,7 +39,7 @@ async function ejecutarConsultaSQLcontransacion(transaction, sqlQuery) {
       if (err) {
         reject(err);
       } else {
-        resolve(result);
+        resolve(result.recordset);
       }
     });
   });

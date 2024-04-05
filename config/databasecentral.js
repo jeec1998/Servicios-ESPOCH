@@ -1,5 +1,5 @@
 module.exports = {
-    /*user: 'sistema',
+   /* user: 'sistema',
     host: 'localhost',
     database: 'bdCentralLocal',
     password: 'Sistemas',

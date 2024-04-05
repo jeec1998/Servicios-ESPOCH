@@ -139,6 +139,7 @@ router.get('/obtenerpersona/:cedula', async (req, res) => {
         });
     }
 });
+
 router.get('/buscarRegistros/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     try {
@@ -1272,9 +1273,73 @@ router.get('/actualizarmatriculados', async (req, res) => {
     }
 });
 
+router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
+    const cedula = req.params.cedula
+    var mensaje = ''
+    var informacionpersona = {}
+    try {
+        var discapacidad = await new Promise(resolve => { consumodinardapMSP(cedula, (valor) => { resolve(valor); }) });
+        if (discapacidad != null) {
+            if (discapacidad.codigoconadis != '') {
+                if (!discapacidad.tipodiscapacidad == "") {
+                    var objtipodiscapacidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('tipoDiscapacidad', 'tdi_nombre', discapacidad.tipodiscapacidad, (err, valor) => { resolve(valor); }) });
+                }
+                var personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                if (personacentralizada.length > 0) {
+                    var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                    if ((carnetdiscregistrado != null) && (carnetdiscregistrado.length > 0)) {
+                        var discapacidadregistrada = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('discapacidad', 'cdi_id', carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
+                        if ((discapacidadregistrada != null) && (discapacidadregistrada.length > 0)) {
+                            discapacidadregistrada.dis_valor = 0;
+                            discapacidadregistrada.tdi_id = objtipodiscapacidad[0].tdi_id;
+                            var discapacidadactualizada = await new Promise(resolve => { centralizada.actualizardiscapacidad(discapacidadregistrada.dis_valor, discapacidadregistrada.tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
+                            if (discapacidadactualizada) {
+                                console.log('Discapacidad actualizada')
+                            }
+                        }
+                        else {
+                            ///registrar discapacidad
+                            var discapacidadregistrada = await new Promise(resolve => { centralizada.ingresoDiscapacidad(0, objtipodiscapacidad[0].tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
+                            if (discapacidadregistrada) {
+                                console.log('Discapacidad registrada con carnet vigente')
+                            }
+                        }
+                    }
+                    else {
+                        var carnetdis = await new Promise(resolve => { centralizada.ingresocarnetDiscapacidad(discapacidad.codigoconadis, discapacidad.idorganizacion, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                        if (carnetdis) {
+                            var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                            var discapacidadregistrada = await new Promise(resolve => { centralizada.ingresoDiscapacidad(0, objtipodiscapacidad[0].tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
+                            if (discapacidadregistrada) {
+                                console.log('Discapacidad y carnet de discapacidad registrados')
+                            }
 
-
-
+                        }
+                    }
+                    personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                    informacionpersona = personacentralizada[0]
+                }
+                else {
+                    mensaje = 'Persona no registrada en la centralizada'
+                }
+            }
+            else {
+                mensaje = 'No se ha encontrado información de discapacidad de la persona en el MSP'
+            }
+        }
+        return res.json({
+            success: true,
+            persona: informacionpersona,
+            mensaje: mensaje
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false,
+            mensaje: 'No existe información de discapacidad en el MSP ni en la Centralizada'
+        });
+    }
+});
 
 //////FUNCIONES
 async function actualizarcamposportipo(idtipo, campocentralizada, tablacentralizada, valor, objpersona, callback) {
@@ -2399,6 +2464,79 @@ async function generateExcelBase64(dataArray) {
     const base64String = base64.fromByteArray(buffer);
 
     return base64String;
+}
+
+async function consumodinardapMSP(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoMSP;
+        const args =
+        {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "cedula", valor: cedula }
+                ]
+            }
+        };
+        console.log(args)
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        var objjson = JSON.parse(jsonString);
+                        console.log(objjson.entidades.entidad[0].filas.fila[0].columnas.columna)
+                        let listacamposdiscapacidad = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
+                        for (campos of listacamposdiscapacidad) {
+                            listado.push(campos);
+                        }
+                        var codigoconadis = ''
+                        var idorganizacion = 1
+                        var tipodiscapacidad = ''
+                        for (atr of listado) {
+                            if (atr.campo == "codigoConadis") {
+                                codigoconadis = atr.valor;
+                                if (codigoconadis.includes('.')) {
+                                    idorganizacion = 2
+                                }
+                                else {
+                                    idorganizacion = 3
+                                }
+                            }
+                            if (atr.campo == "tipoDiscapacidadPredomina") {
+                                tipodiscapacidad = atr.valor
+                            }
+                        }
+                        var discapacidad = {
+                            codigoconadis: codigoconadis,
+                            idorganizacion: idorganizacion,
+                            tipodiscapacidad: tipodiscapacidad
+                        }
+                        console.log(discapacidad)
+                        callback(discapacidad)
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo dinardap: ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
 }
 
 module.exports = router;

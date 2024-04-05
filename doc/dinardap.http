@@ -78,3 +78,6 @@ GET http://localhost:8098/rutaCentral/actualizarestadopersona/060352076856
 
 ### Servicio que actualiza la informacion de la persona consumiendo el registro civil
 GET http://localhost:8098/rutadinardap/actualizardatosmatriculado/1725672396
+
+#### consumir informacion de discapacidad del MSP
+GET http://localhost:8098/rutadinardap/obtenerDiscapacidad/0605771773

@@ -1285,7 +1285,7 @@ router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
                 if (!discapacidad.tipodiscapacidad == "") {
                     var objtipodiscapacidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('tipoDiscapacidad', 'tdi_nombre', discapacidad.tipodiscapacidad, (err, valor) => { resolve(valor); }) });
                 }
-                personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonadiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
                 if (personacentralizada.length > 0) {
                     if (personacentralizada[0].admision == false) {
                         var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
@@ -1318,11 +1318,11 @@ router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
 
                             }
                         }
-                        personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                        personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonadiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
                         informacionpersona = personacentralizada[0]
                     }
                     else {
-                        personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                        personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonadiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
                         informacionpersona = personacentralizada[0]
                         mensaje = 'No se han modificado los datos de la persona porque ha sido registrada en el proceso de admisiones'
                     }
@@ -1332,7 +1332,7 @@ router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
                 }
             }
             else {
-                personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonadiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
                 if ((personacentralizada.length > 0)) {
                     if (personacentralizada[0].idcarnetdiscapacidad != null) {
                         var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });

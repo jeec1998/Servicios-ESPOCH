@@ -80,5 +80,6 @@ GET http://localhost:8098/rutaCentral/actualizarestadopersona/060352076856
 GET http://localhost:8098/rutadinardap/actualizardatosmatriculado/1725672396
 
 #### consumir informacion de discapacidad del MSP
-GET http://localhost:8098/rutadinardap/obtenerDiscapacidad/1803861382
-//GET http://localhost:8098/rutadinardap/obtenerDiscapacidad/0603520768
+//GET http://localhost:8098/rutadinardap/obtenerDiscapacidad/1401255490
+//GET http://localhost:8098/rutadinardap/obtenerDiscapacidad/1803861382
+GET http://localhost:8098/rutadinardap/obtenerDiscapacidad/0603520768

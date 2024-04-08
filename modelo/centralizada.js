@@ -969,3 +969,28 @@ module.exports.modificarnombrespersona = function (primerapellido, segundoapelli
     }
 }
 
+module.exports.obtenerpersonadiscapacidad = function (cedula, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = "SELECT p.per_id, pid_valor, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\"," +
+        "p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.gen_id, gn.gen_nombre," +
+        " p.sex_id, sex_nombre as sexo, p.per_procedencia, cd.cdi_id as idcarnetdiscapacidad, cd.cdi_numero as numerocarnetdiscapacidad, cd.cdi_habilitado as estadocarnet, dc.dis_id as iddiscapacidad, dc.dis_valor as porcentajediscapacidad, td.tdi_id as idtipodiscapacidad, td.tdi_nombre as tipodiscapacidad, org.org_id, org.org_nombre, p.admision " +
+        " FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id " +
+        "LEFT JOIN central.\"carnetDiscapacidad\" cd on cd.per_id=p.per_id " +
+        "LEFT JOIN central.discapacidad dc on dc.cdi_id=cd.cdi_id " +
+        "LEFT JOIN central.\"tipoDiscapacidad\" td on td.tdi_id=dc.tdi_id LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id " +
+        "LEFT JOIN central.organizacion org on org.org_id = cd.org_id " +
+        "INNER JOIN central.genero gn on p.gen_id=gn.gen_id " +
+        " WHERE d.pid_valor= '" + cedula + "'  "
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, response.rows);
+            client.end()
+        })
+        .catch(err => {
+            callback(null, false);
+            console.error('Fallo en la Consulta', err.stack);
+            client.end()
+        })
+}

@@ -1277,6 +1277,7 @@ router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
     const cedula = req.params.cedula
     var mensaje = ''
     var informacionpersona = {}
+    var personacentralizada = {}
     try {
         var discapacidad = await new Promise(resolve => { consumodinardapMSP(cedula, (valor) => { resolve(valor); }) });
         if (discapacidad != null) {
@@ -1284,7 +1285,7 @@ router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
                 if (!discapacidad.tipodiscapacidad == "") {
                     var objtipodiscapacidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('tipoDiscapacidad', 'tdi_nombre', discapacidad.tipodiscapacidad, (err, valor) => { resolve(valor); }) });
                 }
-                var personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
                 if (personacentralizada.length > 0) {
                     if (personacentralizada[0].admision == false) {
                         var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
@@ -1331,6 +1332,20 @@ router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
                 }
             }
             else {
+                personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                if ((personacentralizada.length > 0)) {
+                    if (personacentralizada[0].idcarnetdiscapacidad != null) {
+                        var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                        if ((carnetdiscregistrado != null) && (carnetdiscregistrado.length > 0)) {
+                            carnetdiscregistrado[0].cdi_habilitado = false
+                            var actualizarcarnet = await new Promise(resolve => { centralizada.actualizarCarnetDiscapacidad(carnetdiscregistrado[0], (err, valor) => { resolve(valor); }) });
+                            console.log(actualizarcarnet)
+                            if(actualizarcarnet = 'true'){
+                                console.log('Carnet de discapacidad modificado')
+                            }
+                        }
+                    }
+                }
                 mensaje = 'No se ha encontrado información de discapacidad de la persona en el MSP'
             }
         }

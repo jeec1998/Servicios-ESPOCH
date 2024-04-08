@@ -929,6 +929,23 @@ module.exports.actualizardiscapacidad = function (porcentaje, tipodiscapacidad, 
         })
 }
 
+module.exports.actualizarCarnetDiscapacidad = function (objcarnetregistrado, callback) {
+    var client = new Client(db)
+    var sentencia;
+    sentencia = " UPDATE central.\"carnetDiscapacidad\" SET cdi_numero='" + objcarnetregistrado.cdi_numero + "', org_id='" + objcarnetregistrado.org_id + "', cdi_habilitado='" + objcarnetregistrado.cdi_habilitado + "' WHERE cdi_id=" + objcarnetregistrado.cdi_id + "";
+    client.connect()
+    client.query(sentencia)
+        .then(response => {
+            callback(null, true);
+            client.end()
+        })
+        .catch(err => {
+            console.error('Fallo en la Consulta', err.stack);
+            callback(null, false);
+            client.end()
+        })
+}
+
 module.exports.modificarnombrespersona = function (primerapellido, segundoapellido, nombrecompleto, idpersona, callback) {
     try {
         var client = new Client(db)

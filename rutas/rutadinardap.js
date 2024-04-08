@@ -1286,38 +1286,45 @@ router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
                 }
                 var personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
                 if (personacentralizada.length > 0) {
-                    var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
-                    if ((carnetdiscregistrado != null) && (carnetdiscregistrado.length > 0)) {
-                        var discapacidadregistrada = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('discapacidad', 'cdi_id', carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
-                        if ((discapacidadregistrada != null) && (discapacidadregistrada.length > 0)) {
-                            discapacidadregistrada.dis_valor = 0;
-                            discapacidadregistrada.tdi_id = objtipodiscapacidad[0].tdi_id;
-                            var discapacidadactualizada = await new Promise(resolve => { centralizada.actualizardiscapacidad(discapacidadregistrada.dis_valor, discapacidadregistrada.tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
-                            if (discapacidadactualizada) {
-                                console.log('Discapacidad actualizada')
+                    if (personacentralizada[0].admision == false) {
+                        var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                        if ((carnetdiscregistrado != null) && (carnetdiscregistrado.length > 0)) {
+                            var discapacidadregistrada = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('discapacidad', 'cdi_id', carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
+                            if ((discapacidadregistrada != null) && (discapacidadregistrada.length > 0)) {
+                                discapacidadregistrada.dis_valor = 0;
+                                discapacidadregistrada.tdi_id = objtipodiscapacidad[0].tdi_id;
+                                var discapacidadactualizada = await new Promise(resolve => { centralizada.actualizardiscapacidad(discapacidadregistrada.dis_valor, discapacidadregistrada.tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
+                                if (discapacidadactualizada) {
+                                    console.log('Discapacidad actualizada')
+                                }
+                            }
+                            else {
+                                ///registrar discapacidad
+                                var discapacidadregistrada = await new Promise(resolve => { centralizada.ingresoDiscapacidad(0, objtipodiscapacidad[0].tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
+                                if (discapacidadregistrada) {
+                                    console.log('Discapacidad registrada con carnet vigente')
+                                }
                             }
                         }
                         else {
-                            ///registrar discapacidad
-                            var discapacidadregistrada = await new Promise(resolve => { centralizada.ingresoDiscapacidad(0, objtipodiscapacidad[0].tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
-                            if (discapacidadregistrada) {
-                                console.log('Discapacidad registrada con carnet vigente')
+                            var carnetdis = await new Promise(resolve => { centralizada.ingresocarnetDiscapacidad(discapacidad.codigoconadis, discapacidad.idorganizacion, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                            if (carnetdis) {
+                                var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                                var discapacidadregistrada = await new Promise(resolve => { centralizada.ingresoDiscapacidad(0, objtipodiscapacidad[0].tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
+                                if (discapacidadregistrada) {
+                                    console.log('Discapacidad y carnet de discapacidad registrados')
+                                }
+
                             }
                         }
+                        personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                        informacionpersona = personacentralizada[0]
                     }
                     else {
-                        var carnetdis = await new Promise(resolve => { centralizada.ingresocarnetDiscapacidad(discapacidad.codigoconadis, discapacidad.idorganizacion, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
-                        if (carnetdis) {
-                            var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
-                            var discapacidadregistrada = await new Promise(resolve => { centralizada.ingresoDiscapacidad(0, objtipodiscapacidad[0].tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
-                            if (discapacidadregistrada) {
-                                console.log('Discapacidad y carnet de discapacidad registrados')
-                            }
-
-                        }
+                        personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
+                        informacionpersona = personacentralizada[0]
+                        mensaje = 'No se han modificado los datos de la persona porque ha sido registrada en el proceso de admisiones'
                     }
-                    personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(cedula, (err, valor) => { resolve(valor); }) });
-                    informacionpersona = personacentralizada[0]
                 }
                 else {
                     mensaje = 'Persona no registrada en la centralizada'
@@ -2483,7 +2490,6 @@ async function consumodinardapMSP(cedula, callback) {
                 ]
             }
         };
-        console.log(args)
         soap.createClient(url, async function (err, client) {
             if (!err) {
                 client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
@@ -2495,7 +2501,6 @@ async function consumodinardapMSP(cedula, callback) {
                     else {
                         var jsonString = JSON.stringify(result.paquete);
                         var objjson = JSON.parse(jsonString);
-                        console.log(objjson.entidades.entidad[0].filas.fila[0].columnas.columna)
                         let listacamposdiscapacidad = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
                         for (campos of listacamposdiscapacidad) {
                             listado.push(campos);
@@ -2522,7 +2527,6 @@ async function consumodinardapMSP(cedula, callback) {
                             idorganizacion: idorganizacion,
                             tipodiscapacidad: tipodiscapacidad
                         }
-                        console.log(discapacidad)
                         callback(discapacidad)
                     }
                 });

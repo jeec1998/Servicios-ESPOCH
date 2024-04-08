@@ -48,7 +48,7 @@ module.exports.obtenerpersonareportematriculados = function (cedula, callback) {
     var client = new Client(db)
     var sentencia;
     sentencia = "SELECT p.per_id, d.pid_valor, p.per_nombres, p.\"per_primerApellido\", p.\"per_segundoApellido\", p.per_email, p.\"per_emailAlternativo\", p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia, case when (split_part(p.per_procedencia,'|',2)!='1') THEN concat((select pro_nombre from central.provincia where pro_id = CAST(split_part(p.per_procedencia,'|',1) AS integer)),'/',(select ciu_nombre from central.ciudad where ciu_id = CAST(split_part(p.per_procedencia,'|',2) AS integer)),'/', (select prq_nombre from central.parroquia where prq_id = CAST(split_part(p.per_procedencia,'|',3) AS integer))) "
-    + " else concat((select pai_nombre from central.pais where pai_id = CAST(split_part(p.per_procedencia,'|',1) AS integer)),'/',(select ciu_nombre from central.ciudad where ciu_id = CAST(split_part(p.per_procedencia,'|',2) AS integer)),'/', (select prq_nombre from central.parroquia where prq_id = 1)) end as procedencia, p.per_conyuge, p.per_idconyuge "
+        + " else concat((select pai_nombre from central.pais where pai_id = CAST(split_part(p.per_procedencia,'|',1) AS integer)),'/',(select ciu_nombre from central.ciudad where ciu_id = CAST(split_part(p.per_procedencia,'|',2) AS integer)),'/', (select prq_nombre from central.parroquia where prq_id = 1)) end as procedencia, p.per_conyuge, p.per_idconyuge "
         + "FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id"
         + " WHERE d.pid_valor= '" + cedula + "'  "
     client.connect()
@@ -111,13 +111,14 @@ module.exports.obtenerdatospersonaincluidodiscapacidad = function (cedula, callb
         "p.\"per_telefonoCelular\", \"per_fechaNacimiento\", p.etn_id, et.etn_nombre, p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre," +
         "p.\"per_telefonoCasa\", p.lugarprocedencia_id, prr.prq_nombre, dir.\"dir_callePrincipal\", dir.prq_id as idprqdireccion, " +
         "(select prq_nombre from central.parroquia where prq_id=dir.prq_id) as parroquiadireccion, nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, " +
-        "p.per_procedencia, p.per_conyuge, p.per_idconyuge,  cd.cdi_id as idcarnetdiscapacidad, cd.cdi_numero as numerocarnetdiscapacidad, dc.dis_id as iddiscapacidad, dc.dis_valor as porcentajediscapacidad, td.tdi_id as idtipodiscapacidad, td.tdi_nombre as tipodiscapacidad, p.admision " +
+        "p.per_procedencia, p.per_conyuge, p.per_idconyuge,  cd.cdi_id as idcarnetdiscapacidad, cd.cdi_numero as numerocarnetdiscapacidad, dc.dis_id as iddiscapacidad, dc.dis_valor as porcentajediscapacidad, td.tdi_id as idtipodiscapacidad, td.tdi_nombre as tipodiscapacidad, org.org_id, org.org_nombre, p.admision " +
         " FROM central.persona p INNER JOIN central.\"documentoPersonal\" d ON p.per_id=d.per_id INNER JOIN central.etnia et on p.etn_id=et.etn_id " +
         "LEFT JOIN central.direccion dir on p.per_id=dir.per_id LEFT JOIN central.parroquia prr on p.lugarprocedencia_id=prr.prq_id " +
         "LEFT JOIN central.\"nacionalidadPersona\" np on p.per_id=np.per_id LEFT JOIN central.nacionalidad nac on np.nac_id=nac.nac_id " +
         "LEFT JOIN central.\"carnetDiscapacidad\" cd on cd.per_id=p.per_id " +
         "LEFT JOIN central.discapacidad dc on dc.cdi_id=cd.cdi_id " +
         "LEFT JOIN central.\"tipoDiscapacidad\" td on td.tdi_id=dc.tdi_id LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id " +
+        "LEFT JOIN central.organizacion org on org.org_id = cd.org_id " +
         "INNER JOIN central.genero gn on p.gen_id=gn.gen_id INNER JOIN central.\"estadoCivil\" estc on p.eci_id=estc.eci_id " +
         " WHERE d.pid_valor= '" + cedula + "'  "
     client.connect()

@@ -693,7 +693,12 @@ router.get('/listamatriculadosactualizados', async (req, res) => {
                                 ciudad: ciudad,
                                 parroquia: parroquia,
                                 sexo: personapersonalizada[0].sexo,
-                                genero: personapersonalizada[0].gen_nombre
+                                genero: personapersonalizada[0].gen_nombre,
+                                emailinstitucional: personapersonalizada[0].per_email,
+                                emailpersonal: personapersonalizada[0].per_emailAlternativo,
+                                celular: personapersonalizada[0].per_telefonoCelular,
+                                codigoestudiante: listamatriculados[i].sintCodigo,
+                                nivel: listamatriculados[i].strCodNivel
 
                             }
                             listapersonalizada.push(objestudiante)
@@ -1340,7 +1345,7 @@ router.get('/obtenerDiscapacidad/:cedula', async (req, res) => {
                             carnetdiscregistrado[0].cdi_habilitado = false
                             var actualizarcarnet = await new Promise(resolve => { centralizada.actualizarCarnetDiscapacidad(carnetdiscregistrado[0], (err, valor) => { resolve(valor); }) });
                             console.log(actualizarcarnet)
-                            if(actualizarcarnet = 'true'){
+                            if (actualizarcarnet = 'true') {
                                 console.log('Carnet de discapacidad modificado')
                             }
                         }
@@ -2343,7 +2348,6 @@ async function consumoservicioregistrocivil(cedula, callback) {
                                 if (atr.campo == "lugarNacimiento") {
                                     const lugarNacimiento = atr.valor.split("/");
                                     if (lugarNacimiento.length > 0) {
-                                        console.log(lugarNacimiento)
                                         var provincia = lugarNacimiento[0];
                                         if (lugarNacimiento.length > 1) {
                                             var ciudad = lugarNacimiento[1];
@@ -2356,15 +2360,12 @@ async function consumoservicioregistrocivil(cedula, callback) {
                                             if (objparroquia.length > 0) {
                                                 idparroquia = objparroquia[0].prq_id;
                                             }
+                                            var objprovincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('provincia', 'pro_nombre', provincia, (err, valor) => { resolve(valor); }) });
+                                            if (objprovincia.length > 0) {
+                                                idprovincia = objprovincia[0].pro_id;
+                                            }
                                         } else {
-                                            var idciudad = 1;
-                                            var idparroquia = 1;
-                                        }
-                                        var objprovincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('provincia', 'pro_nombre', provincia, (err, valor) => { resolve(valor); }) });
-                                        if (objprovincia.length > 0) {
-                                            idprovincia = objprovincia[0].pro_id;
-                                        }
-                                        else {
+                                            console.log(lugarNacimiento)
                                             var objpais = await new Promise(resolve => { centralizada.obtenerpaisdadonombre(provincia, (err, valor) => { resolve(valor); }) });
                                             if (objpais != null) {
                                                 idprovincia = objpais[0].pai_id;
@@ -2372,11 +2373,14 @@ async function consumoservicioregistrocivil(cedula, callback) {
                                             else {
                                                 idprovincia = 1;
                                             }
+                                            var idciudad = 1;
+                                            var idparroquia = 1;
                                         }
                                         var procedenciapersona = idprovincia + '|' + idciudad + '|' + idparroquia;
                                         var lugarprocedencia = idparroquia;
                                         if (idparroquia == 1) {
                                             lugarprocedencia = idprovincia
+                                            console.log(procedenciapersona)
                                         }
                                     }
                                 }
@@ -2447,9 +2451,9 @@ async function reportematriculadosExcel(
 ) {
     try {
         if (listado.length > 0) {
-            var datosarray = [['No', 'Codigo Carrera', 'Carrera', 'Codigo Facultad', 'Facultad', 'Sede', 'Cédula', 'Apellidos y Nombres', 'Período', 'País de Origen', 'Provincia', 'Ciudad', 'Parroquia', 'Sexo', 'Genero']];
+            var datosarray = [['No', 'Período', 'Codigo Carrera', 'Carrera', 'Codigo Facultad', 'Facultad', 'Sede', 'Nivel', 'Código Estudiante', 'Cédula', 'Apellidos y Nombres', 'Email Institucional', 'Email Personal', 'Teléfono', 'Sexo', 'Genero', 'País de Origen', 'Provincia', 'Ciudad', 'Parroquia']];
             for (estudiante of listado) {
-                datosarray.push([estudiante.contador, estudiante.codcarrera, estudiante.carrera, estudiante.codfacultad, estudiante.facultad, estudiante.sede, estudiante.cedula, estudiante.nombres, estudiante.periodo, estudiante.nacionalidad, estudiante.provincia, estudiante.ciudad, estudiante.parroquia, estudiante.sexo, estudiante.genero])
+                datosarray.push([estudiante.contador, estudiante.periodo, estudiante.codcarrera, estudiante.carrera, estudiante.codfacultad, estudiante.facultad, estudiante.sede, estudiante.nivel, estudiante.codigoestudiante, estudiante.cedula, estudiante.nombres, estudiante.emailinstitucional, estudiante.emailpersonal, estudiante.celular, estudiante.sexo, estudiante.genero, estudiante.nacionalidad, estudiante.provincia, estudiante.ciudad, estudiante.parroquia])
             }
             generateExcelBase64(datosarray)
                 .then((base64String) => {

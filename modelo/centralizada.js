@@ -605,6 +605,29 @@ module.exports.modificarpersonacondatosmatriz = function (objpersonamatriz, idpe
         callback(null, 0);
     }
 }
+//ACTUALIZACION PERSONALIZADA
+module.exports.modificarpersona = function (objpersonamatriz, idpersonacentral, callback) {
+    try {
+        var client = new Client(db)
+        var sentencia;
+        sentencia = "UPDATE central.persona SET \"per_nombres\"='" + objpersonamatriz.per_nombres + "', \"per_primerApellido\"='" + objpersonamatriz.per_primerapellido + "', \"per_segundoApellido\"='" + objpersonamatriz.per_segundoapellido + "', \"per_fechaNacimiento\"='" + objpersonamatriz.per_fechanacimiento + "', \"per_email\"='" + objpersonamatriz.per_email + "', \"per_emailAlternativo\"='" + objpersonamatriz.per_emailAlternativo + "', \"per_telefonoOficina\"='" + objpersonamatriz.per_telefonoOficina + "', \"per_telefonoCelular\"='" + objpersonamatriz.per_telefonoCelular + "', \"etn_id\"='" + objpersonamatriz.etn_id + "', \"eci_id\"='" + objpersonamatriz.eci_id + "', \"gen_id\"='" + objpersonamatriz.gen_id + "', \"per_fechaModificacion\"='" + objpersonamatriz.per_fechamodificacion + "', \"lugarprocedencia_id\"='" + objpersonamatriz.lugarprocedencia_id + "', \"sex_id\"='" + objpersonamatriz.sex_id + "', \"per_procedencia\"='" + objpersonamatriz.per_procedencia + "', \"admision\"='" + objpersonamatriz.admision + "' WHERE per_id=" + idpersonacentral + ""
+        client.connect()
+        client.query(sentencia)
+            .then(response => {
+                client.end()
+                callback(null, true);
+            })
+            .catch(err => {
+                console.error('Fallo en la Consulta modificar persona', err.stack);
+                client.end()
+                callback(null, false);
+            })
+    }
+    catch (error) {
+        reject(error);
+        callback(null, 0);
+    }
+}
 module.exports.actualizarpersonaprocedencia = function (objpersonamatriz, idpersonacentral, callback) {
     try {
         var client = new Client(db)
@@ -679,6 +702,7 @@ module.exports.modificarnacionalidadpersonalizado = function (idnacionalidad, re
 ///////ACTUALIZAR LA DIRECCION DE LA PERSONA EN LA CENTRALIZADA
 module.exports.modificardireccionpersona = function (calleprincipal, idpersona, idparroquia, callback) {
     try {
+        console.log(calleprincipal, idpersona, idparroquia)
         var client = new Client(db)
         var sentencia;
         sentencia = "SELECT * FROM central.\"direccion\" WHERE per_id=" + idpersona + ""

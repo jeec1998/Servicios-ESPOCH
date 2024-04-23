@@ -521,14 +521,14 @@ router.post('/actualizarpersona', async (req, res) => {
     var jsonDataObj = req.body;
     var fecha = formatDate(new Date());
     var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersona(jsonDataObj.per_emailAlternativo, jsonDataObj.per_telefonoCelular, jsonDataObj.per_telefonoCasa, jsonDataObj.lugarprocedencia_id, jsonDataObj.gen_id, jsonDataObj.per_id, fecha, jsonDataObj.etn_id, (err, valor) => { resolve(valor); }) });
-    if (actualizacionpersona) {
+    if (actualizacionpersona == true) {
         var actualizadireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(jsonDataObj.dir_callePrincipal, jsonDataObj.per_id, jsonDataObj.idprqdireccion, (err, valor) => { resolve(valor); }) });
-        if (actualizadireccion) {
+        if (actualizadireccion == true) {
             var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('nacionalidad', 'nac_id', jsonDataObj.nac_id, (err, valor) => { resolve(valor); }) });
             if (objnacionalidad != null) {
                 if (objnacionalidad.length > 0) {
                     var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(objnacionalidad[0], jsonDataObj.per_id, (err, valor) => { resolve(valor); }) });
-                    if (actualizanacionalidad) {
+                    if (actualizanacionalidad == true) {
                         console.log('persona actualizada con exito')
                         return res.json({
                             success: true,
@@ -670,15 +670,15 @@ router.post('/registrarpersona', async (req, res) => {
         if ((personacentralizada == null) || (personacentralizada.length == 0)) {
             //console.log(personamatriz)
             var registrarpersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personamatriz, (err, valor) => { resolve(valor); }) });
-            if (registrarpersona) {
+            if (registrarpersona == true) {
                 var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personamatriz.per_nombres, personamatriz.per_primerapellido, personamatriz.per_segundoapellido, personamatriz.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
                 if (persona.length > 0) {
                     var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonal(personamatriz.per_cedula, persona[0].per_id, (err, valor) => { resolve(valor); }) });
-                    if (documentopersonalreg) {
+                    if (documentopersonalreg == true) {
                         console.log('Documento personal registrado')
                     }
                     var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, nacionalidad.nac_requiereVisaTrabajo, nacionalidad.nac_id, (err, valor) => { resolve(valor); }) });
-                    if (ingresoNacionalidad) {
+                    if (ingresoNacionalidad == true) {
                         console.log('Registro ingresado correctamente')
                     }
                 }
@@ -687,15 +687,15 @@ router.post('/registrarpersona', async (req, res) => {
         else {
             personacentralizada[0].admision = true;
             var actualizarpersona = await new Promise(resolve => { centralizada.modificarpersonacondatosmatriz(personamatriz, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
-            if (actualizarpersona) {
+            if (actualizarpersona == true) {
                 var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(nacionalidad, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
-                if (actualizanacionalidad) {
+                if (actualizanacionalidad == true) {
                     console.log('Datos de la persona actualizados correctamente')
                 }
             }
         }
         personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
-        if (blndiscapacidad) {
+        if (blndiscapacidad == true) {
             var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
             if ((carnetdiscregistrado != null) && (carnetdiscregistrado.length > 0)) {
                 var discapacidadregistrada = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('discapacidad', 'cdi_id', carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
@@ -703,24 +703,24 @@ router.post('/registrarpersona', async (req, res) => {
                     discapacidadregistrada.dis_valor = personamatriz.porcentajediscapacidad;
                     discapacidadregistrada.tdi_id = objtipodiscapacidad[0].tdi_id;
                     var discapacidadactualizada = await new Promise(resolve => { centralizada.actualizardiscapacidad(discapacidadregistrada.dis_valor, discapacidadregistrada.tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
-                    if (discapacidadactualizada) {
+                    if (discapacidadactualizada == true) {
                         console.log('Discapacidad actualizada')
                     }
                 }
                 else {
                     ///registrar discapacidad
                     var discapacidadregistrada = await new Promise(resolve => { centralizada.ingresoDiscapacidad(personamatriz.porcentajediscapacidad, objtipodiscapacidad[0].tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
-                    if (discapacidadregistrada) {
+                    if (discapacidadregistrada == true) {
                         console.log('Discapacidad registrada con carnet vigente')
                     }
                 }
             }
             else {
                 var carnetdis = await new Promise(resolve => { centralizada.ingresocarnetDiscapacidad(personamatriz.carnetconadis, 2, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
-                if (carnetdis) {
+                if (carnetdis == true) {
                     var carnetdiscregistrado = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('carnetDiscapacidad', 'per_id', personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
                     var discapacidadregistrada = await new Promise(resolve => { centralizada.ingresoDiscapacidad(personamatriz.porcentajediscapacidad, objtipodiscapacidad[0].tdi_id, carnetdiscregistrado[0].cdi_id, (err, valor) => { resolve(valor); }) });
-                    if (discapacidadregistrada) {
+                    if (discapacidadregistrada == true) {
                         console.log('Discapacidad y carnet de discapacidad registrados')
                     }
 
@@ -776,6 +776,183 @@ router.post('/registrarpersona', async (req, res) => {
         });
     }
 });
+
+router.post('/registronuevo', async (req, res) => {
+    var request = require('request');
+    var objpersona = req.body;
+    try {
+        var etnia = objpersona.autoidentificacion;
+        var fechadetalle = objpersona.fechanac.split('/');
+        var personamatriz = {};
+        var nacionalidad = await new Promise(resolve => { verificacionregistro('nacionalidad', 'nac_nombre', objpersona.nacionalidad, 0, 0, (err, valor) => { resolve(valor); }) });
+        var genero = await new Promise(resolve => { verificacionregistro('genero', 'gen_nombre', objpersona.genero, 0, 0, (err, valor) => { resolve(valor); }) });
+        var estadocivil = await new Promise(resolve => { centralizada.obtenerregistroempiezaconunvalor('estadoCivil', 'eci_nombre', objpersona.estadocivil, (err, valor) => { resolve(valor); }) });
+        var provincia = await new Promise(resolve => { verificacionregistro('provincia', 'pro_nombre', objpersona.provinciareside, 0, 0, (err, valor) => { resolve(valor); }) });
+        var sexo = await new Promise(resolve => { verificacionregistro('sexo', 'sex_nombre', objpersona.sexo, 0, 0, (err, valor) => { resolve(valor); }) });
+        if (etnia == '') {
+            etnia = 8;
+        }
+        else {
+            etnia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('etnia', 'etn_nombre', objpersona.autoidentificacion.substring(0, 3), (err, valor) => { resolve(valor); }) });
+            etnia = etnia[0].etn_id;
+        }
+        if (etnia == '') {
+            etnia = 8;
+        }
+        if (estadocivil == null) {
+            estadocivil = 1
+        }
+        else {
+            estadocivil = estadocivil[0].eci_id
+        }
+        if (genero == null) {
+            genero = 3
+        }
+        else {
+            genero = genero.gen_id
+        }
+        if (sexo == null) {
+            sexo = 4
+        } else {
+            sexo = sexo.sex_id
+        }
+
+        var ciudad = await new Promise(resolve => { verificacionregistro('ciudad', 'ciu_nombre', objpersona.cantonreside, provincia.pro_id, 0, (err, valor) => { resolve(valor); }) });
+        var parroquia = await new Promise(resolve => { verificacionregistro('parroquia', 'prq_nombre', objpersona.parroquiareside, provincia.pro_id, ciudad.ciu_id, (err, valor) => { resolve(valor); }) });
+        var listaapellidos = objpersona.apellidos.split(' ');
+        var primerApellido = "";
+        var segundoApellido = "";
+        if (listaapellidos.length > 0) {
+            if (listaapellidos.length == 1) {
+                primerApellido = listaapellidos[0];
+            }
+            else {
+                primerApellido = listaapellidos[0];
+                for (var i = 1; i < listaapellidos.length; i++) {
+                    segundoApellido = segundoApellido + listaapellidos[i];
+                }
+            }
+        }
+        personamatriz = {
+            tipodocumento: objpersona.tipodocumento,
+            per_nombres: objpersona.nombres,
+            per_primerapellido: primerApellido,
+            per_segundoapellido: segundoApellido,
+            per_fechanacimiento: fechadetalle[2] + '-' + fechadetalle[1] + '-' + fechadetalle[0],
+            per_email: objpersona.email,
+            per_emailAlternativo: objpersona.emailalternativo,
+            per_telefonoCelular: objpersona.telefonocelular,
+            per_telefonoOficina: objpersona.telefonooficina,
+            tsa_id: 1,
+            etn_id: etnia,
+            eci_id: estadocivil,
+            gen_id: genero,
+            per_creadopor: 0,
+            per_fechacreacion: formatDate(new Date()),
+            per_modificadopor: 0,
+            per_fechamodificacion: formatDate(new Date()),
+            lugarprocedencia_id: parroquia.prq_id,
+            sex_id: sexo,
+            per_procedencia: provincia.pro_id + '|' + ciudad.ciu_id + '|' + parroquia.prq_id,
+            per_conyuge: "",
+            per_idconyuge: "",
+            per_cedula: objpersona.identificacion,
+            direccion: objpersona.direccion,
+            admision: false
+        }
+        var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
+        if ((personacentralizada == null) || (personacentralizada.length == 0)) {
+            var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personamatriz.per_nombres, personamatriz.per_primerapellido, personamatriz.per_segundoapellido, personamatriz.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
+            if (persona.length == 0) {
+                var registrarpersona = await new Promise(resolve => { centralizada.ingresoPersonaCentralizada(personamatriz, (err, valor) => { resolve(valor); }) });
+                if (registrarpersona == true) {
+                    var persona = await new Promise(resolve => { centralizada.obtenerpersonadadonombresapellidosyfechanacimiento(personamatriz.per_nombres, personamatriz.per_primerapellido, personamatriz.per_segundoapellido, personamatriz.per_fechanacimiento, (err, valor) => { resolve(valor); }) });
+                    if (persona.length > 0) {
+                        var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonalGenerico(personamatriz.per_cedula, personamatriz.tipodocumento, persona[0].per_id, true, (err, valor) => { resolve(valor); }) });
+                        if (documentopersonalreg == true) {
+                            console.log('Documento personal registrado correctamente')
+                        }
+                        var ingresoNacionalidad = await new Promise(resolve => { centralizada.ingresoNacionalidad(persona[0].per_id, nacionalidad.nac_requiereVisaTrabajo, nacionalidad.nac_id, (err, valor) => { resolve(valor); }) });
+                        if (ingresoNacionalidad == true) {
+                            console.log('Registro de Nacionalidad ingresado correctamente')
+                        }
+                        var ingresodireccion = await new Promise(resolve => { centralizada.ingresoDireccionPersona(persona[0].per_id, personamatriz.direccion, '', personamatriz.lugarprocedencia_id, (err, valor) => { resolve(valor); }) });
+                        if (ingresodireccion == true) {
+                            console.log('Registro Direccion ingresado correctamente')
+                        }
+                    }
+                }
+            }
+            else {
+                var documentopersonalreg = await new Promise(resolve => { centralizada.ingresoDocumentoPersonalGenerico(personamatriz.per_cedula, personamatriz.tipodocumento, persona[0].per_id, true, (err, valor) => { resolve(valor); }) });
+                if (documentopersonalreg == true) {
+                    console.log('Documento personal registrado correctamente')
+                }
+            }
+        }
+        else {
+            var actualizarpersona = await new Promise(resolve => { centralizada.modificarpersona(personamatriz, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+            if (actualizarpersona == true) {
+                var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(nacionalidad, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
+                if (actualizanacionalidad == true) {
+                    console.log('Datos de la persona actualizados correctamente')
+                }
+                var actualizardireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(personamatriz.direccion, personacentralizada[0].per_id, personamatriz.lugarprocedencia_id, (err, valor) => { resolve(valor); }) });
+                if (actualizardireccion == true) {
+                    console.log('Direccion actualizada correctamente')
+                }
+            }
+        }
+        personacentralizada = await new Promise(resolve => { centralizada.obtenerdatospersonaincluidodiscapacidad(objpersona.identificacion, (err, valor) => { resolve(valor); }) });
+        if (personacentralizada[0].dir_callePrincipal == null) {
+            personacentralizada[0].dir_callePrincipal = ''
+        }
+        if (personacentralizada[0].idprqdireccion == null) {
+            personacentralizada[0].idprqdireccion = ''
+        }
+        if (personacentralizada[0].parroquiadireccion == null) {
+            personacentralizada[0].parroquiadireccion = ''
+        }
+        if (personacentralizada[0].idcarnetdiscapacidad == null) {
+            personacentralizada[0].idcarnetdiscapacidad = ''
+        }
+        if (personacentralizada[0].numerocarnetdiscapacidad == null) {
+            personacentralizada[0].numerocarnetdiscapacidad = ''
+        }
+        if (personacentralizada[0].iddiscapacidad == null) {
+            personacentralizada[0].iddiscapacidad = ''
+        }
+        if (personacentralizada[0].porcentajediscapacidad == null) {
+            personacentralizada[0].porcentajediscapacidad = ''
+        }
+        if (personacentralizada[0].idtipodiscapacidad == null) {
+            personacentralizada[0].idtipodiscapacidad = ''
+        }
+        if (personacentralizada[0].tipodiscapacidad == null) {
+            personacentralizada[0].tipodiscapacidad = ''
+        }
+        if (personacentralizada[0].per_emailAlternativo == null) {
+            personacentralizada[0].per_emailAlternativo = ''
+        }
+        if (personacentralizada[0].per_email == null) {
+            personacentralizada[0].per_email = ''
+        }
+        if (personacentralizada[0].per_telefonoCelular == null) {
+            personacentralizada[0].per_telefonoCelular = ''
+        }
+        return res.json({
+            success: true,
+            listado: personacentralizada
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false,
+            mensaje: 'Error: ' + err
+        });
+    }
+});
+
 router.get('/objetopersonalizadodadoid/:perid', async (req, res) => {
     const perid = req.params.perid;
     try {
@@ -807,7 +984,7 @@ router.get('/actualizarestadopersona/:cedula', async (req, res) => {
         if ((personacentralizada != null) || (personacentralizada.length > 0)) {
             var actualizacion = await new Promise(resolve => { centralizada.actualizarpersona("persona", "admision", "true", personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
             console.log(actualizacion)
-            if (actualizacion) {
+            if (actualizacion == true) {
                 personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedula, (err, valor) => { resolve(valor); }) });
             }
             return res.json({
@@ -903,7 +1080,7 @@ router.get('/actualizacionAdmisionCentral/:idperiodo', async (req, res) => {
                         var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedulapostulante, (err, valor) => { resolve(valor); }) });
                         if ((personacentralizada != null) && (personacentralizada.length > 0)) {
                             var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersonaadmision(idgenero, idestadocivil, fecha, idetnia, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
-                            if (actualizacionpersona) {
+                            if (actualizacionpersona == true) {
                                 var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(nacionalidad, personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
                                 console.log("Actualizado correctamente el registro de la persona: " + cedulapostulante)
                                 cont = cont + 1
@@ -1009,7 +1186,7 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
         else {
             if (tabla == 'nacionalidad') {
                 var ingresonacionalidad = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'nac_nombre', 'nac_requiereVisaTrabajo', valor, false, (err, valor) => { resolve(valor); }) });
-                if (ingresonacionalidad) {
+                if (ingresonacionalidad == true) {
                     var objnacionalidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('nacionalidad', 'nac_nombre', valor, (err, valor) => { resolve(valor); }) });
                     return callback(null, objnacionalidad[0])
                 }
@@ -1019,7 +1196,7 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
                     let text = valor;
                     let codgenero = text.substring(0, 3);
                     var ingresogenero = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'gen_codigo', 'gen_nombre', codgenero, valor, (err, valor) => { resolve(valor); }) });
-                    if (ingresogenero) {
+                    if (ingresogenero == true) {
                         var objgenero = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('genero', 'gen_nombre', valor, (err, valor) => { resolve(valor); }) });
                         return callback(null, objgenero[0])
                     }
@@ -1027,7 +1204,7 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
                 else {
                     if (tabla == 'provincia') {
                         var ingresoprovincia = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'pro_nombre', 'pai_id', valor, 6, (err, valor) => { resolve(valor); }) });
-                        if (ingresoprovincia) {
+                        if (ingresoprovincia == true) {
                             var objprovincia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('provincia', 'pro_nombre', valor, (err, valor) => { resolve(valor); }) });
                             return callback(null, objprovincia[0])
                         }
@@ -1035,7 +1212,7 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
                     else {
                         if (tabla == 'ciudad') {
                             var ingresociudad = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'ciu_nombre', 'pro_id', valor, idprovincia, (err, valor) => { resolve(valor); }) });
-                            if (ingresociudad) {
+                            if (ingresociudad == true) {
                                 var objciudad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('ciudad', 'ciu_nombre', valor, (err, valor) => { resolve(valor); }) });
                                 return callback(null, objciudad[0])
                             }
@@ -1043,7 +1220,7 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
                         else {
                             if (tabla == 'parroquia') {
                                 var ingresoparroquia = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'prq_nombre', 'ciu_id', valor, idciudad, (err, valor) => { resolve(valor); }) });
-                                if (ingresoparroquia) {
+                                if (ingresoparroquia == true) {
                                     var objparroquia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('parroquia', 'prq_nombre', valor, (err, valor) => { resolve(valor); }) });
                                     return callback(null, objparroquia[0])
                                 }
@@ -1051,7 +1228,7 @@ async function verificacionregistro(tabla, nombrecampo, valor, idprovincia, idci
                             else {
                                 if (tabla == 'sexo') {
                                     var ingresosexo = await new Promise(resolve => { centralizada.ingresotablacon2campos(tabla, 'sex_codigo', 'sex_nombre', valor.substring(0, 3), valor, (err, valor) => { resolve(valor); }) });
-                                    if (ingresosexo) {
+                                    if (ingresosexo == true) {
                                         var objsexo = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('sexo', 'sex_nombre', valor, (err, valor) => { resolve(valor); }) });
                                         return callback(null, objsexo[0])
                                     }

@@ -456,7 +456,7 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
                             var parroquia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('parroquia', 'prq_id', myArray[2], (err, valor) => { resolve(valor); }) });
                             if (parroquia.length > 0) {
                                 var procedenciastring = provincia[0].pro_nombre + "/" + ciudad[0].ciu_nombre + "/" + parroquia[0].prq_nombre;
-                                personapersonalizada[0].per_procedencia = procedenciastring;
+                                personapersonalizada[0].procedencia = procedenciastring;
                             }
                             else {
                                 return res.json({
@@ -475,7 +475,7 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
                     else {
                         var pais = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('pais', 'pai_id', myArray[0], (err, valor) => { resolve(valor); }) });
                         if (pais.length > 0) {
-                            personapersonalizada[0].per_procedencia = pais[0].pai_nombre;
+                            personapersonalizada[0].procedencia = pais[0].pai_nombre;
                         }
                         else {
                             return res.json({

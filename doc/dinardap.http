@@ -62,7 +62,7 @@ GET http://localhost:8098/rutaCentral/objetopersonalizadodadoid/24443
 GET http://localhost:8098/rutadinardap/procesonombres/CEPA RUIZ ANA SOFIA
 
 ###buscarregistrospornombresyfechadenacimiento
-GET http://localhost:8098/rutadinardap/buscarRegistros/0603520768
+GET http://localhost:8098/rutadinardap/buscarRegistros/1756723431
 
 ###validar registro de titulos de tercer nivel
 GET http://localhost:8098/rutadinardap/verificartitulotercernivel/0600309272

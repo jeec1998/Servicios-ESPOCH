@@ -904,6 +904,151 @@ router.get('/migrarestudiantesindicadoresdadoelperiodo/:periodo', async (req, re
     }
 });
 
+//// reporte de estudiantes matriculados dado el periodo consumiendo la centralizada
+router.get('/listamatriculadosporperiodoycarrera/:periodo/:carrera', async (req, res) => {
+    const codperiodo = req.params.periodo
+    const basecarrera = req.params.carrera
+    var conex = bd;
+    const pool = new sql.ConnectionPool(conex);
+    await pool.connect();
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    try {
+        var listamatriculados = []
+        var datosregistro = await ejecutarConsultaSQLcontransacion(transaction, "SELECT Carreras.strCodigo, Carreras.strBaseDatos, Carreras.strCodEstado, Escuelas.strNombre, Facultades.strNombre AS Facultad, Facultades.strCodigo as codigofacultad, Carreras.strNombre AS Carrera, strSede as Sede"
+            + " FROM Carreras INNER JOIN Escuelas ON Carreras.strCodEscuela = Escuelas.strCodigo INNER JOIN Facultades ON Escuelas.strCodFacultad = Facultades.strCodigo where strBaseDatos='" + basecarrera + "'");
+        if (datosregistro != null) {
+            var periodovigente = await ejecutarConsultaSQLcontransacion(transaction, "SELECT * FROM dbo.[Periodos] WHERE  strCodigo='" + codperiodo + "'");
+            if (periodovigente != null) {
+                for (carrera of datosregistro) {
+                    var matriculadoscarrera = await ejecutarConsultaSQLcontransacion(transaction, "select  sintCodigo, strCodPeriodo, strCodEstud, strCedula, strNacionalidad, strCodNivel, strAutorizadaPor, dtFechaAutorizada,"
+                        + " strCreadaPor, dtFechaCreada, strCodEstado, cast ('" + carrera.Carrera + "' as varchar(150)) as Carrera,'" + carrera.strCodigo + "' as codcarrera, "
+                        + " cast ('" + carrera.Facultad + "' as varchar(150)) as Facultad, '" + carrera.codigofacultad + "' as codfacultad, '" + carrera.Sede + "' as sede from [" + carrera.strBaseDatos + "].[dbo].matriculas "
+                        + " inner join [" + carrera.strBaseDatos + "].[dbo].Estudiantes on matriculas.strCodEstud=Estudiantes.strCodigo where (strCodPeriodo = '" + codperiodo + "') and strCodEstado='DEF'");
+
+                    if (matriculadoscarrera != null) {
+                        for (var matricula of matriculadoscarrera) {
+                            listamatriculados.push(matricula)
+                        }
+                    }
+                    else {
+                        console.log('No existen estudiantes matriculados en la carrera: ' + carrera.Carrera + ' base de datos:' + carrera.strBaseDatos + ' en el periodo: ' + periodovigente[0].strCodigo)
+                    }
+                }
+                console.log('Longitud de la lista de matriculados: ' + listamatriculados.length)
+                if (listamatriculados != null) {
+                    var listapersonalizada = []
+                    var cont = 1
+                    for (var i = 0; i < listamatriculados.length; i++) {
+                        var cedula = listamatriculados[i].strCedula;
+                        cedula = cedula.replace('-', '')
+                        var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonareportematriculadosPersonalizado(cedula, (err, valor) => { resolve(valor); }) });
+                        //console.log(personapersonalizada.length)
+
+                        if ((personapersonalizada != null) && (personapersonalizada.length > 0)) {
+                            var nacionalidad = ''
+                            /*if (personapersonalizada[0].nac_id != null) {
+                                nacionalidad = personapersonalizada[0].nac_nombre
+                            }
+                            else {
+                                nacionalidad = listamatriculados[i].strNacionalidad
+                            }*/
+                            var datosprocedencia = personapersonalizada[0].procedencia.split('/')
+                            var procedencia = ''
+                            var provincia = 'NO ESPECIFICADO'
+                            var ciudad = 'NO ESPECIFICADO'
+                            var parroquia = 'NO ESPECIFICADO'
+
+                            if (datosprocedencia[1] == 'NO ESPECIFICADO') {
+                                nacionalidad = datosprocedencia[0]
+                            }
+                            else {
+                                nacionalidad = 'ECUADOR'
+                                provincia = datosprocedencia[0]
+                                ciudad = datosprocedencia[1]
+                                parroquia = datosprocedencia[2]
+                                //procedencia = datosprocedencia[0] + '/' + datosprocedencia[1] + '/' + datosprocedencia[2]
+
+                            }
+                            var objestudiante = {
+                                contador: cont,
+                                cedula: cedula,
+                                nombres: personapersonalizada[0].per_nombres + ' ' + personapersonalizada[0].per_primerApellido + ' ' + personapersonalizada[0].per_segundoApellido,
+                                codcarrera: listamatriculados[i].codcarrera,
+                                fechasperiodo: periodovigente[0].strDescripcion,
+                                carrera: listamatriculados[i].Carrera,
+                                codfacultad: listamatriculados[i].codfacultad,
+                                facultad: listamatriculados[i].Facultad,
+                                codigoestudiante: listamatriculados[i].strCodEstud,
+                                sede: listamatriculados[i].sede,
+                                periodo: listamatriculados[i].strCodPeriodo,
+                                nacionalidad: nacionalidad,
+                                provincia: provincia,
+                                ciudad: ciudad,
+                                parroquia: parroquia,
+                                nivel: listamatriculados[i].strCodNivel,
+                                sexo: personapersonalizada[0].sexo,
+                                genero: personapersonalizada[0].gen_nombre,
+                                etnia: personapersonalizada[0].etn_nombre,
+                                fechanacimiento: personapersonalizada[0].per_fechaNacimiento,
+                                direccion: personapersonalizada[0].dir_callePrincipal,
+                                parroquiaresidencia: personapersonalizada[0].parroquiadireccion
+
+                            }
+                            listapersonalizada.push(objestudiante)
+                            cont = cont + 1
+                        }
+                    }
+                    if (listapersonalizada.length > 0) {
+                        var reportebase64 = await new Promise((resolve) => {
+                            reportematriculadosExcelPersonalizado(listapersonalizada, (err, valor) => {
+                                resolve(valor);
+                            });
+                        });
+                        return res.json({
+                            success: true,
+                            reporte: reportebase64
+                        });
+                    } else {
+                        return res.json({
+                            success: false,
+                            mensaje: 'No existe información de los estudiantes matriculados'
+                        });
+                    }
+
+                }
+                else {
+                    return res.json({
+                        success: false,
+                        mensaje: 'No existe información de los estudiantes matriculados'
+                    });
+                }
+                return res.json({
+                    success: true,
+                    matriculados: listapersonalizada
+                });
+            } else {
+                return res.json({
+                    success: false,
+                    mensaje: 'No existe un periodo vigente'
+                });
+            }
+
+        }
+        else {
+            return res.json({
+                success: false,
+                mensaje: 'No existen carreras en la base master'
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
 /// migración de estudiantes matriculados a la base de indicadores dado el periodo --- servicio de alta concurrencia
 async function migrarmatriculadosdadoelcodigodelperiodo(codperiodo) {
     let lst = [];
@@ -2474,9 +2619,38 @@ async function reportematriculadosExcel(
     }
 }
 
+async function reportematriculadosExcelPersonalizado(
+    listado,
+    callback
+) {
+    try {
+        if (listado.length > 0) {
+            var datosarray = [['No', 'Período', 'FechasPeriodo', 'Codigo Carrera', 'Carrera', 'Codigo Facultad', 'Facultad', 'Sede', 'Nivel', 'Código Estudiante', 'Cédula', 'Apellidos y Nombres', 'Email Institucional', 'Email Personal', 'Fecha Nacimiento', 'Teléfono', 'Sexo', 'Genero', 'Etnia', 'País de Origen', 'Provincia', 'Ciudad', 'Parroquia', 'Direccion Residencia']];
+            for (estudiante of listado) {
+                datosarray.push([estudiante.contador, estudiante.periodo, estudiante.fechasperiodo, estudiante.codcarrera, estudiante.carrera, estudiante.codfacultad, estudiante.facultad, estudiante.sede, estudiante.nivel, estudiante.codigoestudiante, estudiante.cedula, estudiante.nombres, estudiante.emailinstitucional, estudiante.emailpersonal, estudiante.fechanacimiento, estudiante.celular, estudiante.sexo, estudiante.genero, estudiante.etnia, estudiante.nacionalidad, estudiante.provincia, estudiante.ciudad, estudiante.parroquia, estudiante.direccion])
+            }
+            generateExcelBase64(datosarray)
+                .then((base64String) => {
+                    // Puedes enviar o guardar la cadena base64 según tus necesidades
+                    return callback(null, base64String);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    return callback(null, false);
+                });
+
+        } else {
+            return callback(null, false);
+        }
+    } catch (err) {
+        console.log("Error: " + err);
+        return callback(null, false);
+    }
+}
+
 async function generateExcelBase64(dataArray) {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Datos DAN');
+    const worksheet = workbook.addWorksheet('Reporte');
 
     // Agregar datos al archivo Excel
     dataArray.forEach((row) => {

@@ -449,33 +449,46 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
                 var procedenciapersona = personapersonalizada[0].per_procedencia;
                 const myArray = procedenciapersona.split("|");
                 if (myArray.length > 0) {
-                    var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('provincia', 'pro_id', myArray[0], (err, valor) => { resolve(valor); }) });
-                    if (provincia.length > 0) {
-                        var ciudad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('ciudad', 'ciu_id', myArray[1], (err, valor) => { resolve(valor); }) });
-                        if (ciudad.length > 0) {
-                            var parroquia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('parroquia', 'prq_id', myArray[2], (err, valor) => { resolve(valor); }) });
-                            if (parroquia.length > 0) {
-                                var procedenciastring = provincia[0].pro_nombre + "/" + ciudad[0].ciu_nombre + "/" + parroquia[0].prq_nombre;
-                                personapersonalizada[0].procedencia = procedenciastring;
+                    if (myArray[1] != '1') {
+                        var provincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('provincia', 'pro_id', myArray[0], (err, valor) => { resolve(valor); }) });
+                        if (provincia.length > 0) {
+                            var ciudad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('ciudad', 'ciu_id', myArray[1], (err, valor) => { resolve(valor); }) });
+                            if (ciudad.length > 0) {
+                                var parroquia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('parroquia', 'prq_id', myArray[2], (err, valor) => { resolve(valor); }) });
+                                if (parroquia.length > 0) {
+                                    var procedenciastring = provincia[0].pro_nombre + "/" + ciudad[0].ciu_nombre + "/" + parroquia[0].prq_nombre;
+                                    personapersonalizada[0].procedencia = procedenciastring;
+                                }
+                                else {
+                                    return res.json({
+                                        success: false,
+                                        mensaje: 'No existen registros de parroquia de la persona'
+                                    });
+                                }
                             }
                             else {
                                 return res.json({
                                     success: false,
-                                    mensaje: 'No existen registros de parroquia de la persona'
+                                    mensaje: 'No existen registros de ciudad de la persona'
                                 });
                             }
                         }
                         else {
-                            return res.json({
-                                success: false,
-                                mensaje: 'No existen registros de ciudad de la persona'
-                            });
+                            var pais = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('pais', 'pai_id', myArray[0], (err, valor) => { resolve(valor); }) });
+                            if (pais.length > 0) {
+                                personapersonalizada[0].procedencia = pais[0].pai_nombre;
+                            }
+                            else {
+                                return res.json({
+                                    success: false,
+                                    mensaje: 'No existen registros de provincia de la persona'
+                                });
+                            }
                         }
-                    }
-                    else {
+                    } else {
                         var pais = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('pais', 'pai_id', myArray[0], (err, valor) => { resolve(valor); }) });
                         if (pais.length > 0) {
-                            personapersonalizada[0].procedencia = pais[0].pai_nombre;
+                            personapersonalizada[0].procedencia = pais[0].pai_nombre + "/NO ESPECIFICADO/NO ESPECIFICADO";
                         }
                         else {
                             return res.json({

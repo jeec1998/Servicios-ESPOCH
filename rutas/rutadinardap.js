@@ -1735,18 +1735,18 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                                 var ciudad = 1;
                                                 var parroquia = 1;
                                             }
-                                            var objprovincia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('provincia', 'pro_nombre', provincia, (err, valor) => { resolve(valor); }) });
+                                            var objprovincia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('provincia', 'pro_nombre', provincia, (err, valor) => { resolve(valor); }) });
                                             if (objprovincia.length > 0) {
                                                 idprovincia = objprovincia[0].pro_id;
                                             }
                                             else {
                                                 idprovincia = 1;
                                             }
-                                            var objciudad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('ciudad', 'ciu_nombre', ciudad, (err, valor) => { resolve(valor); }) });
+                                            var objciudad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('ciudad', 'ciu_nombre', ciudad, (err, valor) => { resolve(valor); }) });
                                             if (objciudad.length > 0) {
                                                 idciudad = objciudad[0].ciu_id;
                                             }
-                                            var objparroquia = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('parroquia', 'prq_nombre', parroquia, (err, valor) => { resolve(valor); }) });
+                                            var objparroquia = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('parroquia', 'prq_nombre', parroquia, (err, valor) => { resolve(valor); }) });
                                             if (objparroquia.length > 0) {
                                                 idparroquia = objparroquia[0].prq_id;
                                             }
@@ -1762,7 +1762,7 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                     }
                                     if (atr.campo == "nacionalidad") {
                                         var nacionalidad = atr.valor;
-                                        var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampo('nacionalidad', 'nac_nombre', nacionalidad, (err, valor) => { resolve(valor); }) });
+                                        var objnacionalidad = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('nacionalidad', 'nac_nombre', nacionalidad, (err, valor) => { resolve(valor); }) });
                                         if (objnacionalidad.length > 0) {
                                             idnacionalidad = objnacionalidad[0].nac_id;
                                             blnvisatrabajo = objnacionalidad[0].nac_requiereVisaTrabajo;

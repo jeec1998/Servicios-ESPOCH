@@ -560,11 +560,11 @@ module.exports.ingresoDiscapacidad = function (porcentajediscapacidad, idtipodis
         })
 }
 ///////ACTUALIZAR PERSONA EN LA CENTRALIZADA
-module.exports.modificardatospersona = function (email, telefonocelular, telefonocasa, idlugarnacimiento, idgenero, idpersona, fechamodificacion, idetnia, callback) {
+module.exports.modificardatospersona = function (emailinst, email, telefonocelular, telefonocasa, idlugarnacimiento, idgenero, idpersona, fechamodificacion, idetnia, callback) {
     try {
         var client = new Client(db)
         var sentencia;
-        sentencia = "UPDATE central.persona SET \"per_emailAlternativo\"='" + email + "', \"per_telefonoCelular\"='" + telefonocelular + "', \"per_fechaModificacion\"='" + fechamodificacion + "', \"per_telefonoCasa\"='" + telefonocasa + "' WHERE per_id=" + idpersona + ""
+        sentencia = "UPDATE central.persona SET \"per_email\"='" + emailinst + "',\"per_emailAlternativo\"='" + email + "', \"per_telefonoCelular\"='" + telefonocelular + "', \"per_fechaModificacion\"='" + fechamodificacion + "', \"per_telefonoCasa\"='" + telefonocasa + "' WHERE per_id=" + idpersona + ""
         client.connect()
         client.query(sentencia)
             .then(response => {

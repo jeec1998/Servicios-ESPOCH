@@ -533,7 +533,7 @@ router.post('/actualizarpersona', async (req, res) => {
     var request = require('request');
     var jsonDataObj = req.body;
     var fecha = formatDate(new Date());
-    var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersona(jsonDataObj.per_emailAlternativo, jsonDataObj.per_telefonoCelular, jsonDataObj.per_telefonoCasa, jsonDataObj.lugarprocedencia_id, jsonDataObj.gen_id, jsonDataObj.per_id, fecha, jsonDataObj.etn_id, (err, valor) => { resolve(valor); }) });
+    var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersona(jsonDataObj.per_email, jsonDataObj.per_emailAlternativo, jsonDataObj.per_telefonoCelular, jsonDataObj.per_telefonoCasa, jsonDataObj.lugarprocedencia_id, jsonDataObj.gen_id, jsonDataObj.per_id, fecha, jsonDataObj.etn_id, (err, valor) => { resolve(valor); }) });
     if (actualizacionpersona == true) {
         if ((jsonDataObj.idprqdireccion != undefined) && (jsonDataObj.idprqdireccion != 'null')){
             var actualizadireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(jsonDataObj.dir_callePrincipal, jsonDataObj.per_id, jsonDataObj.idprqdireccion, (err, valor) => { resolve(valor); }) });

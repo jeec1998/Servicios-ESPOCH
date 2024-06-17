@@ -535,17 +535,21 @@ router.post('/actualizarpersona', async (req, res) => {
     var fecha = formatDate(new Date());
     var actualizacionpersona = await new Promise(resolve => { centralizada.modificardatospersona(jsonDataObj.per_emailAlternativo, jsonDataObj.per_telefonoCelular, jsonDataObj.per_telefonoCasa, jsonDataObj.lugarprocedencia_id, jsonDataObj.gen_id, jsonDataObj.per_id, fecha, jsonDataObj.etn_id, (err, valor) => { resolve(valor); }) });
     if (actualizacionpersona == true) {
-        var actualizadireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(jsonDataObj.dir_callePrincipal, jsonDataObj.per_id, jsonDataObj.idprqdireccion, (err, valor) => { resolve(valor); }) });
-        if (actualizadireccion == true) {
+        if ((jsonDataObj.idprqdireccion != undefined) && (jsonDataObj.idprqdireccion != 'null')){
+            var actualizadireccion = await new Promise(resolve => { centralizada.modificardireccionpersona(jsonDataObj.dir_callePrincipal, jsonDataObj.per_id, jsonDataObj.idprqdireccion, (err, valor) => { resolve(valor); }) });
+        }
+        if ((jsonDataObj.nac_id != undefined) && (jsonDataObj.nac_id != 'null')) {
             var objnacionalidad = await new Promise(resolve => { centralizada.obtenerdatosdadonombredelatablayelcampoparainteger('nacionalidad', 'nac_id', jsonDataObj.nac_id, (err, valor) => { resolve(valor); }) });
+
             if (objnacionalidad != null) {
                 if (objnacionalidad.length > 0) {
                     var actualizanacionalidad = await new Promise(resolve => { centralizada.modificarnacionalidadpersona(objnacionalidad[0], jsonDataObj.per_id, (err, valor) => { resolve(valor); }) });
                     if (actualizanacionalidad == true) {
                         console.log('persona actualizada con exito')
+                        var personaactualizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(jsonDataObj.pid_valor, (err, valor) => { resolve(valor); }) });
                         return res.json({
                             success: true,
-                            listado: jsonDataObj
+                            listado: personaactualizada
                         });
                     }
                     else {
@@ -573,10 +577,10 @@ router.post('/actualizarpersona', async (req, res) => {
             }
         }
         else {
+            var personaactualizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(jsonDataObj.pid_valor, (err, valor) => { resolve(valor); }) });
             return res.json({
-                success: false,
-                mensaje: 'Error en el registro de la tabla direccion',
-                listado: []
+                success: true,
+                listado: personaactualizada
             });
         }
     }

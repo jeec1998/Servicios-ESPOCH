@@ -1775,6 +1775,8 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                         per_fechanacimiento: fechaNacimiento,
                                         tsa_id: 1,
                                         etn_id: 8,
+                                        per_email:'',
+                                        per_emailAlternativo:'',
                                         eci_id: idestadocivil,
                                         gen_id: idgenero,
                                         per_creadopor: 0,
@@ -2566,6 +2568,8 @@ async function consumoservicioregistrocivil(cedula, callback) {
                                     dir_numcasa: numerocasa,
                                     per_nacionalidad: idnacionalidad,
                                     nac_reqvisa: blnvisatrabajo,
+                                    per_email:'',
+                                    per_emailAlternativo:'',
                                     admision: false
                                 }
                             }

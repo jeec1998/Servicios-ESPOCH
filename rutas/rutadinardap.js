@@ -1648,6 +1648,12 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                     console.log('No existen registros para actualizar')
                                     callback(null, personas[0]);
                                 }
+                                var personainstruccion = personas[0]
+                                var instruccionformal = await new Promise(resolve => { verificarinstruccionformalpersona(personainstruccion[0].per_id, (err, valor) => { resolve(valor); }) });
+                                if (instruccionformal != null) {
+                                    console.log('Registros de instruccion formal ingresado correctamente')
+                                    callback(null, personas[0]);
+                                }
                             }
                             else {
                                 ////consume la dinardap y crea el objeto en la centralizada
@@ -1775,8 +1781,8 @@ async function consumirserviciodinardap(tipo, cedula, res, personas, callback) {
                                         per_fechanacimiento: fechaNacimiento,
                                         tsa_id: 1,
                                         etn_id: 8,
-                                        per_email:'',
-                                        per_emailAlternativo:'',
+                                        per_email: '',
+                                        per_emailAlternativo: '',
                                         eci_id: idestadocivil,
                                         gen_id: idgenero,
                                         per_creadopor: 0,
@@ -2325,7 +2331,12 @@ async function actualizaciondenombrescentral(nombrecompleto, callback) {
                     primerApellido = pospalabra[0]
                     segundoApellido = ''
                     for (var c = 1; c < pospalabra.length; c++) {
-                        nombrescompletos = nombrescompletos + pospalabra[c] + ' '
+                        if ((c + 1) == pospalabra.length) {
+                            nombrescompletos = nombrescompletos + pospalabra[c]
+                        }
+                        else {
+                            nombrescompletos = nombrescompletos + pospalabra[c] + ' '
+                        }
                     }
                 }
                 else {
@@ -2344,7 +2355,12 @@ async function actualizaciondenombrescentral(nombrecompleto, callback) {
                 primerApellido = pospalabra[0]
                 segundoApellido = pospalabra[1]
                 for (var c = 2; c < pospalabra.length; c++) {
-                    nombrescompletos = nombrescompletos + pospalabra[c] + ' '
+                    if ((c + 1) == pospalabra.length) {
+                        nombrescompletos = nombrescompletos + pospalabra[c]
+                    }
+                    else {
+                        nombrescompletos = nombrescompletos + pospalabra[c] + ' '
+                    }
                 }
             }
             personacentralizada = {
@@ -2568,8 +2584,8 @@ async function consumoservicioregistrocivil(cedula, callback) {
                                     dir_numcasa: numerocasa,
                                     per_nacionalidad: idnacionalidad,
                                     nac_reqvisa: blnvisatrabajo,
-                                    per_email:'',
-                                    per_emailAlternativo:'',
+                                    per_email: '',
+                                    per_emailAlternativo: '',
                                     admision: false
                                 }
                             }

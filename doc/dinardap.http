@@ -3,7 +3,7 @@
 //GET http://localhost:4000/rutadinardap/obtenerpersona/YB74262570
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0650907694
 //GET http://localhost:4000/rutadinardap/obtenerpersona/0603520768
-GET http://localhost:8098/rutadinardap/obtenerpersona/1756723431
+GET http://localhost:8098/rutadinardap/obtenerpersona/0603082645
 
 ###consumo de nacionalidades
 GET http://localhost:8098/rutaCentral/listanacionalidades
@@ -33,7 +33,7 @@ GET http://localhost:8098/rutaCentral/listaparroquiasdadoidciudad/16
 GET http://localhost:8098/rutaCentral/listaetnias
 
 ###verificar instruccion formal de la persona
-GET http://localhost:8098/rutadinardap/verificarinstruccionformal/133175
+GET http://localhost:8098/rutadinardap/verificarinstruccionformal/176899
 
 ###consumo de una provincia dado el id
 GET http://localhost:8098/rutaCentral/obtenerprovinciadadoid/7

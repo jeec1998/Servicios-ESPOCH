@@ -2173,7 +2173,7 @@ async function registrartitulocentralizada(objtitulodinardap, per_id, callback) 
         else {
             titulos = await new Promise(resolve => { centralizada.obtenerregistrodadonombre('titulo', 'tit_nombre', objtitulodinardap.titulo, (err, valor) => { resolve(valor); }) });
         }
-        if ((titulos == null) || (titulos.length == 0)) {
+        if ((titulos == null) || (titulos.length == 0) || (titulos == undefined)) {
             console.log('registrar titulo en la base de datos')
             var registrotitulo = await new Promise(resolve => { centralizada.ingresotitulo(objtitulodinardap.titulo, objtitulodinardap.nivel, (err, valor) => { resolve(valor); }) });
             if (registrotitulo == true) {

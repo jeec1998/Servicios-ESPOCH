@@ -300,7 +300,8 @@ module.exports.obtenerdatosdadonombredelatablayelcampo = function (nombretabla, 
 module.exports.obtenerregistrodadonombre = function (nombretabla, nombrecampo, nombre, callback) {
     var client = new Client(db)
     var sentencia;
-    sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t." + nombrecampo + " ilike '" + nombre + "'"
+    var nombretitulo=nombre.replace(/'/g, "''")
+    sentencia = "SELECT * FROM central.\"" + nombretabla + "\" t WHERE t." + nombrecampo + " ilike '" + nombretitulo + "'"
     client.connect()
     client.query(sentencia)
         .then(response => {

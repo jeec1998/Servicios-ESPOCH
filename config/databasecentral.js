@@ -6,9 +6,14 @@ module.exports = {
      port: 5432,
  */
 
-    user: 'sistema',
+   /*  user: 'sistema',
     host: '172.17.102.14',
     database: 'centralizacion_db',
     password: 'Sistemas',
-    port: 3311,
+    port: 3311, */
+     user: '',
+    host: 'localhost',
+    database: 'centralizada',
+    password: 'Reggae1998',
+    port: 5432,
 };

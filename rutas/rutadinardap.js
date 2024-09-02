@@ -2861,6 +2861,27 @@ router.get('/consumodinardapSRIDatos/:cedula', async (req, res) => {
         });
     }
 });
+router.get('/consumoESPOCHMSP/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var ESPOCHMSP = [];
+    var success = false;
+    try {
+        var espochMSP = await new Promise(resolve => { consumoESPOCHMSP(cedula, (valor) => { resolve(valor); }) });
+        if (espochMSP != null) {
+            ESPOCHMSP = espochMSP;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: ESPOCHMSP
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
 router.get('/consumodinardapSRIGenral1/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     var sriGeneral = [];
@@ -2935,7 +2956,7 @@ router.get('/consumodinardapSRICompletoDatosContactos/:cedula', async (req, res)
 /* ***************************************************************************************
 Unida e individual
 */
-router.get('/consumodinardapSRIGeneral/:cedula', async (req, res) => {
+router.get('/consumodinardapSRIGeneralCompleto/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
 
     var telefonoDomicilio = '';
@@ -3274,14 +3295,29 @@ async function consumoESPOCHMSP(cedula, callback) {
                         for (campos of listacamposESPOCHMSP) {
                             listado.push(campos);
                         }
-                        var telefonoDomicilioR = ''
+                        var codigoConadis = ''
+                        var tipoDiscapacidadPredomina=''
+                        var gradoDiscapacidad = ''
+                        var porcentajeDiscapacidad = ''
                         for (atr of listado) {
-                            if (atr.campo == "telefonoDomicilioMedCon") {
-                                telefonoDomicilioR = atr.valor;
+                            if (atr.campo == "codigoConadis") {
+                                codigoConadis = atr.valor;
+                            }
+                            if (atr.campo == "tipoDiscapacidadPredomina"){
+                                tipoDiscapacidadPredomina = atr.valor;
+                            }
+                            if(atr.campo == "gradoDiscapacidad"){
+                                gradoDiscapacidad = atr.valor;
+                            }
+                            if(atr.campo == "porcentajeDiscapacidad"){
+                                porcentajeDiscapacidad = atr.valor;
                             }
                         }
                         var espochMSP = {
-                            telefonoDomicilioR: telefonoDomicilioR
+                            codigoConadis: codigoConadis,
+                            tipoDiscapacidadPredomina,
+                            gradoDiscapacidad,
+                            porcentajeDiscapacidad
                         }
                         callback(espochMSP)
                     }

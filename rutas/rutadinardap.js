@@ -17,6 +17,7 @@ const base64 = require('base64-js');
 const ExcelJS = require('exceljs');
 const bd = require("../config/baseMaster");
 var cron = require('node-cron');
+const { list } = require("pdfkit");
 
 router.get('/obtenerpersona/:cedula', async (req, res) => {
     var cedula = req.params.cedula;
@@ -2863,17 +2864,29 @@ router.get('/consumodinardapSRIDatos/:cedula', async (req, res) => {
 });
 router.get('/consumoESPOCHMSP/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
-    var ESPOCHMSP = [];
-    var success = false;
+    let ESPOCHMSP = [];
+    let success = false;
+
     try {
-        var espochMSP = await new Promise(resolve => { consumoESPOCHMSP(cedula, (valor) => { resolve(valor); }) });
-        if (espochMSP != null) {
-            ESPOCHMSP = espochMSP;
+        const espochMSP = await new Promise(resolve => {consumoESPOCHMSP(cedula, valor => resolve(valor)); });
+
+        if (espochMSP.mensaje) {
+            return res.json({
+                success: success,
+                mensaje: espochMSP.mensaje
+            });
+        }
+
+        if (espochMSP.codigoConadis) {
             success = true;
+            return res.json({
+                success: success,
+                listado: espochMSP
+            });
         }
         return res.json({
-            success: success,
-            listado: ESPOCHMSP
+            success: false,
+            mensaje: 'No se encontraron datos para la cédula proporcionada.'
         });
     } catch (err) {
         console.log('Error: ' + err)
@@ -3216,6 +3229,7 @@ async function consumodinardapSRIGeneral(cedula, callback) {
                     var jsonString = JSON.stringify(result.return);
                     var objjson = JSON.parse(jsonString);
                     let listacamposdinardapsrigeneral = objjson.instituciones[0].datosPrincipales.registros;
+                    console.log(listacamposdinardapsrigeneral)
                     for (campos of listacamposdinardapsrigeneral) {
                         listado.push(campos);
                     }
@@ -3224,7 +3238,6 @@ async function consumodinardapSRIGeneral(cedula, callback) {
                     var razonSocial = ''
                     var nombreFantasiaComercial = ''
                     var actividadEconomicaPrincipal = ''
-                    console.log(listado)
                     for (atr of listado) {
                          if (atr.campo == "numeroRuc") {
                             numeroRuc = atr.valor;
@@ -3275,7 +3288,7 @@ async function consumoESPOCHMSP(cedula, callback) {
             parametros: {
                 parametro: [
                     { nombre: "codigoPaquete", valor: codigopaquete },
-                    { nombre: "identificacion", valor: cedula }
+                    { nombre: "cedula", valor: cedula }
                 ]
             }
         };
@@ -3289,12 +3302,14 @@ async function consumoESPOCHMSP(cedula, callback) {
                     }
                     else {
                         var jsonString = JSON.stringify(result.paquete);
+                        console.log(jsonString)
                         var objjson = JSON.parse(jsonString);
                         let listacamposESPOCHMSP = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
-                        
+                        console.log(listacamposESPOCHMSP)
                         for (campos of listacamposESPOCHMSP) {
                             listado.push(campos);
                         }
+                        
                         var codigoConadis = ''
                         var tipoDiscapacidadPredomina=''
                         var gradoDiscapacidad = ''
@@ -3315,9 +3330,9 @@ async function consumoESPOCHMSP(cedula, callback) {
                         }
                         var espochMSP = {
                             codigoConadis: codigoConadis,
-                            tipoDiscapacidadPredomina,
-                            gradoDiscapacidad,
-                            porcentajeDiscapacidad
+                            tipoDiscapacidadPredomina: tipoDiscapacidadPredomina,
+                            gradoDiscapacidad: gradoDiscapacidad,
+                            porcentajeDiscapacidad: porcentajeDiscapacidad,
                         }
                         callback(espochMSP)
                     }

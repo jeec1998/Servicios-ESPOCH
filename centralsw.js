@@ -8,6 +8,8 @@ const sql = require('mssql');
 const central = require('./rutas/rutaCentral');
 const acceso = require('./rutas/rutacceso');
 const dinardap = require('./rutas/rutadinardap');
+const dinardapV2 = require('./rutas/rutaDinardapV2');
+const actualizarV2 = require('./rutas/rutaActualizarV2');
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
@@ -46,6 +48,8 @@ app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));//
 app.use('/rutaAcceso', acceso);
 app.use('/rutaCentral', central);
 app.use('/rutadinardap', dinardap);
+app.use('/rutaDinardapV2', dinardapV2);
+app.use('/rutaActualizarV2', actualizarV2 )
 
 
 ///app.use('/Seguridad', Seguridad);

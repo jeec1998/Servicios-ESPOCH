@@ -1295,29 +1295,5 @@ async function informacionsenescyt(cedula, callback) {
         return callback(null);
     }
 }
-/* get de discapacidad */
-router.get('/objpersonalizadodiscapacidad', async (req, res) => {
-    const cedula = req.params.cedula;
-    try {
-        var personadiscapacitada = await new Promise(resolve => { centralizada.obtenerdiscapacidadpersonalizado((err, valor) => { resolve(valor); }) });
-        if (personadiscapacitada.length > 0) {
-            return res.json({
-                success: true,
-                listado: personadiscapacitada
-            });
-        }
-        else {
-            return res.json({
-                success: true,
-                listado: []
-            });
-        }
-    } catch (err) {
-        console.log('Error: ' + err)
-        return res.json({
-            success: false
-        });
-    }
-});
-/* ************* */
+
 module.exports = router;

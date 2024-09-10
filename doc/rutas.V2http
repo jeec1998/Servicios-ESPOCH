@@ -1,0 +1,14 @@
+###Ver todos los discapacitados
+GET http://localhost:8098/rutaActualizarV2/objpersonalizadodiscapacidad
+### Servicios dinardap SRI
+GET http://localhost:8098/rutaDinardapV2/consumodinardapSRICompleto/:cedula
+GET http://localhost:8098/rutaDinardapV2/consumodinardapSRIContactos/:cedula
+GET http://localhost:8098/rutaDinardapV2/consumodinardapSRIDatos/:cedula
+### Servicio SRI unido 
+GET http://localhost:8098/rutaDinardapV2/consumodinardapSRICompletoDatosContactos/:cedula
+### servicio SRI antiguo separado 
+GET http://localhost:8098/rutaDinardapV2/consumodinardapSRIGenral1/:cedula
+### Informacion del Servicio SRI antiguo y nuevo unido 
+GET http://localhost:8098/rutaDinardapV2/consumodinardapSRIGeneralCompleto/:cedula 
+### Servicio ESPOCH MSP
+GET http://localhost:8098/rutaDinardapV2/consumoESPOCHMSP/:cedula

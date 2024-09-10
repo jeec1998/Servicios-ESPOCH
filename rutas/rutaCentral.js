@@ -444,6 +444,7 @@ router.get('/objpersonalizado/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     try {
         var personapersonalizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedula, (err, valor) => { resolve(valor); }) });
+        console.log(personapersonalizada)
         if (personapersonalizada != null) {
             if (personapersonalizada.length > 0) {
                 var procedenciapersona = personapersonalizada[0].per_procedencia;
@@ -998,6 +999,7 @@ router.get('/actualizarestadopersona/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     try {
         var personacentralizada = await new Promise(resolve => { centralizada.obtenerpersonapersonalizado(cedula, (err, valor) => { resolve(valor); }) });
+        
         if ((personacentralizada != null) || (personacentralizada.length > 0)) {
             var actualizacion = await new Promise(resolve => { centralizada.actualizarpersona("persona", "admision", "true", personacentralizada[0].per_id, (err, valor) => { resolve(valor); }) });
             console.log(actualizacion)
@@ -1293,5 +1295,29 @@ async function informacionsenescyt(cedula, callback) {
         return callback(null);
     }
 }
-
+/* get de discapacidad */
+router.get('/objpersonalizadodiscapacidad', async (req, res) => {
+    const cedula = req.params.cedula;
+    try {
+        var personadiscapacitada = await new Promise(resolve => { centralizada.obtenerdiscapacidadpersonalizado((err, valor) => { resolve(valor); }) });
+        if (personadiscapacitada.length > 0) {
+            return res.json({
+                success: true,
+                listado: personadiscapacitada
+            });
+        }
+        else {
+            return res.json({
+                success: true,
+                listado: []
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+/* ************* */
 module.exports = router;

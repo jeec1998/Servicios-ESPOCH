@@ -11,9 +11,9 @@ module.exports = {
     database: 'centralizacion_db',
     password: 'Sistemas',
     port: 3311, */
-     user: '',
+     user: 'postgres',
     host: 'localhost',
-    database: 'centralizada',
+    database: 'Centralizada',
     password: 'Reggae1998',
     port: 5432,
 };

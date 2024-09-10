@@ -1,5 +1,10 @@
 module.exports = {
-  "user": "sistema",
+  user: 'postgres',
+    host: 'localhost',
+    database: 'Centralizada',
+    password: 'Reggae1998',
+    port: 5432,
+  /*"user": "sistema",
   //  "password": "BDSqlAdmin111",
  //   "server": "172.17.102.218",
  "password": "Sistemas",
@@ -10,5 +15,5 @@ module.exports = {
     max: 300000,
     min: 0,
     idleTimeoutMillis: 0,
-  }
+  }*/
 };

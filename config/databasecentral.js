@@ -11,7 +11,7 @@ module.exports = {
     database: 'centralizacion_db',
     password: 'Sistemas',
     port: 3311, */
-     user: 'postgres',
+    user: 'postgres',
     host: 'localhost',
     database: 'Centralizada',
     password: 'Reggae1998',

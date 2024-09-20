@@ -1,6 +1,7 @@
 const { ejecutarConsultaSQLcontransacion } = require("./../config/ejecucion.js");
 const { Pool } = require("pg");
 const express = require('express');
+const db = require('../config/databasecentral');
 const router = express.Router();
 const soap = require('soap');
 const jwt_decode = require('jwt-decode');
@@ -18,9 +19,502 @@ const ExcelJS = require('exceljs');
 const bd = require("../config/baseMaster");
 var cron = require('node-cron');
 const { list } = require("pdfkit");
+const actualizarV2 = require('./../modelo/actualizarV2');
+/*  */
+router.get('/actualizacionDiscapacidadPorcentaje', async (req, res) => {
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+    let resultadosFinales = [];
 
-/*Get
-*/
+    try {
+        const personadiscapacitada = await new Promise((resolve, reject) => {
+            actualizarV2.obtenerdiscapacidad((err, valor) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(valor);
+                }
+            });
+        });
+
+        if (personadiscapacitada.length > 0) {
+            const personasLimitadas = personadiscapacitada.slice(0, 10);
+
+            for (const persona of personasLimitadas) {
+                const cedula = persona.pid_valor;
+                let success = false;
+
+                try {
+                    const espochMSP = await new Promise(resolve => {
+                        consumoESPOCHMSP(cedula, valor => resolve(valor));
+                    });
+                    if (persona.dis_valor === 0) {
+                        success = true;
+                        const carnet = persona.cdi_numero;
+                        const nuevoPorcentajeDiscapacidad = espochMSP.porcentajeDiscapacidad;
+
+                        try {
+                            const query =`
+                                UPDATE central.discapacidad d 
+                                SET dis_valor = $1 
+                                FROM central."carnetDiscapacidad" c 
+                                WHERE d.cdi_id = c.cdi_id 
+                                AND c.cdi_numero = $2
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoPorcentajeDiscapacidad, carnet]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Porcentaje de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    carnet,
+                                    nuevoPorcentajeDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el porcentaje de discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                        if (persona.dis_grado === null) {
+                            success = true;
+                            const carnet = persona.cdi_numero;
+                            const nuevoGradoDiscapacidad = espochMSP.gradoDiscapacidad;
+    
+                            try {
+                                const query = `
+                                 UPDATE central.discapacidad d
+                                 SET dis_grado = $1 
+                                 FROM central."carnetDiscapacidad" c
+                                 WHERE d.cdi_id = c.cdi_id
+                                  AND c.cdi_numero = $2
+                                `;
+                                const datosdiscapacidad = await transaccioncentral.query(query, [nuevoGradoDiscapacidad, carnet]);
+    
+                                if (datosdiscapacidad.rowCount > 0) {
+                                    console.log("Grado de discapacidad actualizado correctamente.");
+                                    resultadosFinales.push({
+                                        success: true,
+                                        carnet,
+                                        nuevoGradoDiscapacidad
+                                    });
+                                } else {
+                                    console.log("No se pudo actualizar el grado de discapacidad.");
+                                }
+                            } catch (error) {
+                                console.error("Error durante la actualización:", error);
+                            }
+                        }
+                } catch (err) {
+                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
+                    resultadosFinales.push({
+                        success: false,
+                        BaseDatos: persona,
+                        mensaje: 'Error al procesar los datos para la cédula proporcionada.'
+                    });
+                }
+            }
+
+            return res.json({
+                success: true,
+                listado: resultadosFinales
+            });
+        } else {
+            return res.json({
+                success: false,
+                listado: []
+            });
+        }
+    } catch (err) {
+        console.error('Error: ', err);
+        await transactionmigracion.rollback();
+        await poolmigracion.close();
+        await transaccioncentral.end();
+        return res.json({
+            success: false,
+            mensaje: 'Error al procesar la solicitud.'
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
+router.get('/actualizacionDiscapacidadTodo', async (req, res) => {
+    const codperiodo = req.params.periodo;
+    let reportebase64 = '';
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+    let resultadosFinales = [];
+
+    try {
+        const personadiscapacitada = await new Promise((resolve, reject) => {
+            actualizarV2.obtenerdiscapacidad((err, valor) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(valor);
+                }
+            });
+        });
+
+        if (personadiscapacitada.length > 0) {
+            const personasLimitadas = personadiscapacitada.slice(0, 10);
+
+            for (const persona of personasLimitadas) {
+                const cedula = persona.pid_valor;
+                let success = false;
+
+                try {
+                    const espochMSP = await new Promise(resolve => {
+                        consumoESPOCHMSP(cedula, valor => resolve(valor));
+                    });
+                 /*    if(persona.dis_valor != espochMSP.porcentajeDiscapacidad){
+                        const carnet = persona.cdi_numero;
+                        const nuevoPorcentajeDiscapacidad = espochMSP.porcentajeDiscapacidad;
+
+                        try {
+                            const query =`
+                                UPDATE central.discapacidad d 
+                                SET dis_valor = $1 
+                                FROM central."carnetDiscapacidad" c 
+                                WHERE d.cdi_id = c.cdi_id 
+                                AND c.cdi_numero = $2
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoPorcentajeDiscapacidad, carnet]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Porcentaje de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    carnet,
+                                    nuevoPorcentajeDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el porcentaje de discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                    if (persona.dis_grado != espochMSP.gradoDiscapacidad) {
+                        const nuevoGradoDiscapacidad = espochMSP.gradoDiscapacidad;
+                        const carnet = persona.cdi_numero;
+                        try {
+                            const query = `
+                             UPDATE central.discapacidad d
+                             SET dis_grado = $1 
+                             FROM central."carnetDiscapacidad" c
+                             WHERE d.cdi_id = c.cdi_id
+                              AND c.cdi_numero = $2
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoGradoDiscapacidad, carnet]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Grado de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    carnet,
+                                    nuevoGradoDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el grado de discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                    
+                    if (persona.tdi_nombre != espochMSP.tipoDiscapacidadPredomina) {
+                        const nuevoTipoDiscapacidad = espochMSP.tipoDiscapacidadPredomina;
+                        const carnet = persona.cdi_numero;
+                        try {
+                            const query = `
+                            UPDATE central.discapacidad d
+                            SET tdi_id = (
+                            SELECT t.tdi_id 
+                            FROM central."tipoDiscapacidad" t 
+                            WHERE t.tdi_nombre = $1
+                            )   
+                            FROM central."carnetDiscapacidad" c
+                            WHERE d.cdi_id = c.cdi_id
+                            AND c.cdi_numero = $2;
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoTipoDiscapacidad, carnet]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Tipo de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    carnet,
+                                    nuevoTipoDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el Tipo de Discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    } */
+                   console.log(espochMSP.codigoConadis)
+                    if (persona.cdi_numero != espochMSP.codigoConadis) {
+            
+                        const nuevocarntetDiscapacidad = espochMSP.codigoConadis;
+                        const personaID = persona.per_id;
+                        try {
+                            const query = `
+                            UPDATE central."carnetDiscapacidad" c
+                            SET cdi_numero = $1
+                            WHERE c.per_id = $2
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevocarntetDiscapacidad, personaID]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Carnet de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    personaID,
+                                    nuevocarntetDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el Carnet de Discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                } catch (err) {
+                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
+                    resultadosFinales.push({
+                        success: false,
+                        BaseDatos: persona,
+                        mensaje: 'Error al procesar los datos para la cédula proporcionada.'
+                    });
+                }
+            }
+            return res.json({
+                success: true,
+                listado: resultadosFinales
+            });
+        } else {
+            return res.json({
+                success: false,
+                listado: []
+            });
+        }
+    } catch (err) {
+        console.error('Error: ', err);
+        return res.json({
+            success: false,
+            mensaje: 'Error al procesar la solicitud.'
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
+router.get('/discapacidadadDBlimitada', async (req, res) => {
+    try {
+        var personadiscapacitada = await new Promise(resolve => {
+            actualizarV2.obtenerdiscapacidad((err, valor) => resolve(valor));
+        });
+        if (personadiscapacitada.length > 0) {
+            let resultadosFinales = [];
+            const personasLimitadas = personadiscapacitada.slice(0, 10);
+
+            for (const persona of personasLimitadas) {
+                const cedula = persona.pid_valor;
+                let success = false;
+
+                try {
+                    const espochMSP = await new Promise(resolve => {
+                        consumoESPOCHMSP(cedula, valor => resolve(valor));
+                    });
+
+                    if (espochMSP.mensaje != null) {
+                        resultadosFinales.push({
+                            success: false,
+                            BaseDatos: persona, 
+                            mensaje: espochMSP.mensaje
+                        });
+                        continue; 
+                    }
+
+                    if (espochMSP.codigoConadis) {
+                        success = true;
+                        resultadosFinales.push({
+                            success: success,
+                            BaseDatos: persona, 
+                            ESPOCHMSP: espochMSP
+                        });
+                    }
+
+                } catch (err) {
+                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
+                    resultadosFinales.push({
+                        success: false,
+                        BaseDatos: persona, 
+                        mensaje: 'Error al procesar los datos para la cédula proporcionada.'
+                    });
+                }
+            }
+
+            return res.json({
+                success: true,
+                listado: resultadosFinales
+            });
+        } else {
+            return res.json({
+                success: false,
+                listado: []
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err);
+        return res.json({
+            success: false
+        });
+    }
+});
+/*  */
+/*Get *********************************************************************/
+
+router.get('/discapacidadadDB', async (req, res) => {
+    try {
+
+        var personadiscapacitada = await new Promise(resolve => {
+            actualizarV2.obtenerdiscapacidad((err, valor) => resolve(valor));
+        });
+
+        if (personadiscapacitada.length > 0) {
+            let resultadosFinales = [];
+            for (const persona of personadiscapacitada) {
+                const cedula = persona.pid_valor;
+                let success = false;
+
+                try {
+                    const espochMSP = await new Promise(resolve => {
+                        consumoESPOCHMSP(cedula, valor => resolve(valor));
+                    });
+
+                    if (espochMSP.mensaje != null) {
+                        resultadosFinales.push({
+                            success: false,
+                            BaseDatos: persona, 
+                            mensaje: espochMSP.mensaje
+                        });
+                        continue; 
+                    }
+
+                    if (espochMSP.codigoConadis) {
+                        success = true;
+                        resultadosFinales.push({
+                            success: success,
+                            BaseDatos: persona, 
+                            ESPOCHMSP: espochMSP
+                        });
+                    }
+                    
+                    
+
+                } catch (err) {
+                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
+                    resultadosFinales.push({
+                        success: false,
+                        BaseDatos: persona, 
+                        mensaje: 'Error al procesar los datos para la cédula proporcionada.'
+                    });
+                }
+            }
+
+            return res.json({
+                success: true,
+                listado: resultadosFinales
+            });
+        } else {
+            return res.json({
+                success: false,
+                listado: []
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err);
+        return res.json({
+            success: false
+        });
+    }
+});
+router.post('/discapacidadandDBActualizar', async (req, res) => {
+    try {
+
+        var personadiscapacitada = await new Promise(resolve => {
+            actualizarV2.obtenerdiscapacidad((err, valor) => resolve(valor));
+        });
+
+        if (personadiscapacitada.length > 0) {
+           for (const persona of personadiscapacitada) {
+                const cedula = persona.pid_valor;
+                let success = false;
+
+                try {
+                    const espochMSP = await new Promise(resolve => {
+                        consumoESPOCHMSP(cedula, valor => resolve(valor));
+                    });
+                    if (persona.dis_valor === 0) {
+                        success = true;
+                        const carnet = persona.cdi_numero;
+                        const nuevoPorcentajeDiscapacidad = espochMSP.porcentajeDiscapacidad;
+                    
+                        try {
+                            const result = await new Promise((resolve, reject) => {
+                                actualizarV2.actualizarPorcentajeDiscapacidad(carnet, nuevoPorcentajeDiscapacidad, (err, result) => {
+                                    if (err) {
+                                        console.error("Error al actualizar el porcentaje de discapacidad:", err);
+                                        return reject(err);
+                                    }
+                                    resolve(result); 
+                                });
+                            });
+                            if (result) {
+                                console.log("Porcentaje de discapacidad actualizado correctamente.");
+                                return res.json({
+                                    success: true,
+                                });
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                    
+                    
+
+                } catch (err) {
+                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
+                    resultadosFinales.push({
+                        success: false,
+                        BaseDatos: persona, 
+                        mensaje: 'Error al procesar los datos para la cédula proporcionada.'
+                    });
+                }
+            }
+
+            return res.json({
+                success: true,
+                listado: resultadosFinales
+            });
+        } else {
+            return res.json({
+                success: false,
+                listado: []
+            });
+        }
+    } catch (err) {
+        console.log('Error: ' + err);
+        return res.json({
+            success: false
+        });
+    }
+});
+/* ***************************************************************************************** */
+
 router.get('/consumodinardapSRICompletoindividual/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     var success = false;

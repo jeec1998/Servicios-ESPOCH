@@ -20,7 +20,176 @@ const bd = require("../config/baseMaster");
 var cron = require('node-cron');
 const { list } = require("pdfkit");
 const actualizarV2 = require('./../modelo/actualizarV2');
-/*  */
+/* Actualizar por medio de la cedula */
+router.get('/actualizacionDiscapacidad/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    let reportebase64 = '';
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+    let resultadosFinales = [];
+    try {
+        var personadiscapacitada = await new Promise((resolve, reject) => {
+            actualizarV2.discapacidad(cedula, (err, valor) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(valor);
+                }
+            });
+        }).catch(err => {
+            console.error("Error al obtener personadiscapacitada:", err);
+        });
+        
+        if (personadiscapacitada.length > 0) {
+            for (const persona of personadiscapacitada) {
+                const cedula = persona.pid_valor;
+                let success = false;
+                try {
+                    const espochMSP = await new Promise(resolve => {
+                        consumoESPOCHMSP(cedula, valor => resolve(valor));
+                    });
+                    if(persona.dis_valor != espochMSP.porcentajeDiscapacidad){
+                        const carnet = persona.cdi_numero;
+                        const nuevoPorcentajeDiscapacidad = espochMSP.porcentajeDiscapacidad;
+
+                        try {
+                            const query =`
+                                UPDATE central.discapacidad d 
+                                SET dis_valor = $1 
+                                FROM central."carnetDiscapacidad" c 
+                                WHERE d.cdi_id = c.cdi_id 
+                                AND c.cdi_numero = $2
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoPorcentajeDiscapacidad, carnet]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Porcentaje de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    carnet,
+                                    nuevoPorcentajeDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el porcentaje de discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                    if (persona.dis_grado != espochMSP.gradoDiscapacidad) {
+                        const nuevoGradoDiscapacidad = espochMSP.gradoDiscapacidad;
+                        const carnet = persona.cdi_numero;
+                        try {
+                            const query = `
+                             UPDATE central.discapacidad d
+                             SET dis_grado = $1 
+                             FROM central."carnetDiscapacidad" c
+                             WHERE d.cdi_id = c.cdi_id
+                              AND c.cdi_numero = $2
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoGradoDiscapacidad, carnet]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Grado de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    carnet,
+                                    nuevoGradoDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el grado de discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                    
+                    if (persona.tdi_nombre != espochMSP.tipoDiscapacidadPredomina) {
+                        const nuevoTipoDiscapacidad = espochMSP.tipoDiscapacidadPredomina;
+                        const carnet = persona.cdi_numero;
+                        try {
+                            const query = `
+                            UPDATE central.discapacidad d
+                            SET tdi_id = (
+                            SELECT t.tdi_id 
+                            FROM central."tipoDiscapacidad" t 
+                            WHERE t.tdi_nombre = $1
+                            )   
+                            FROM central."carnetDiscapacidad" c
+                            WHERE d.cdi_id = c.cdi_id
+                            AND c.cdi_numero = $2;
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoTipoDiscapacidad, carnet]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Tipo de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    carnet,
+                                    nuevoTipoDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el Tipo de Discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                   
+                    if (persona.cdi_numero != espochMSP.codigoConadis) {
+            
+                        const nuevocarntetDiscapacidad = espochMSP.codigoConadis;
+                        const personaID = persona.per_id;
+                        try {
+                            const query = `
+                            UPDATE central."carnetDiscapacidad" c
+                            SET cdi_numero = $1
+                            WHERE c.per_id = $2
+                            `;
+                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevocarntetDiscapacidad, personaID]);
+
+                            if (datosdiscapacidad.rowCount > 0) {
+                                console.log("Carnet de discapacidad actualizado correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    nuevocarntetDiscapacidad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar el Carnet de Discapacidad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                } catch (err) {
+                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
+                    resultadosFinales.push({
+                        success: false,
+                        BaseDatos: persona,
+                        mensaje: 'Error al procesar los datos para la cédula proporcionada.'
+                    });
+                }
+            }
+            return res.json({
+                success: true,
+                listado: resultadosFinales
+            });
+        } else {
+            return res.json({
+                success: false,
+                listado: []
+            });
+        }
+        } catch (err) {
+        console.error('Error: ', err);
+        return res.json({
+            success: false,
+            mensaje: 'Error al procesar la solicitud.'
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+}); 
 router.get('/actualizacionDiscapacidadPorcentaje', async (req, res) => {
     const poolcentralizada = new Pool(db);
     const transaccioncentral = await poolcentralizada.connect();
@@ -36,7 +205,6 @@ router.get('/actualizacionDiscapacidadPorcentaje', async (req, res) => {
                 }
             });
         });
-
         if (personadiscapacitada.length > 0) {
             const personasLimitadas = personadiscapacitada.slice(0, 10);
 
@@ -140,7 +308,6 @@ router.get('/actualizacionDiscapacidadPorcentaje', async (req, res) => {
     }
 });
 router.get('/actualizacionDiscapacidadTodo', async (req, res) => {
-    const codperiodo = req.params.periodo;
     let reportebase64 = '';
     const poolcentralizada = new Pool(db);
     const transaccioncentral = await poolcentralizada.connect();
@@ -159,7 +326,6 @@ router.get('/actualizacionDiscapacidadTodo', async (req, res) => {
 
         if (personadiscapacitada.length > 0) {
             const personasLimitadas = personadiscapacitada.slice(0, 10);
-
             for (const persona of personasLimitadas) {
                 const cedula = persona.pid_valor;
                 let success = false;
@@ -168,7 +334,7 @@ router.get('/actualizacionDiscapacidadTodo', async (req, res) => {
                     const espochMSP = await new Promise(resolve => {
                         consumoESPOCHMSP(cedula, valor => resolve(valor));
                     });
-                 /*    if(persona.dis_valor != espochMSP.porcentajeDiscapacidad){
+                    if(persona.dis_valor != espochMSP.porcentajeDiscapacidad){
                         const carnet = persona.cdi_numero;
                         const nuevoPorcentajeDiscapacidad = espochMSP.porcentajeDiscapacidad;
 
@@ -254,7 +420,7 @@ router.get('/actualizacionDiscapacidadTodo', async (req, res) => {
                         } catch (error) {
                             console.error("Error durante la actualización:", error);
                         }
-                    } */
+                    }
                    console.log(espochMSP.codigoConadis)
                     if (persona.cdi_numero != espochMSP.codigoConadis) {
             
@@ -940,9 +1106,10 @@ async function consumodinardapSRIDatos(cedula, callback) {
                         var idRepresentanteLegal = ''
                         for (atr of listado) {
                            
-                            } if (atr.campo == "idRepreLegal") {
+                            if (atr.campo == "idRepreLegal") {
                                 idRepresentanteLegal = atr.valor;
                             }
+                        }
                         
                         var sriDatos = {
                             idRepresentanteLegal: idRepresentanteLegal
@@ -1100,4 +1267,252 @@ async function consumoESPOCHMSP(cedula, callback) {
         return callback(null);
     }
 }
+async function consumodinardapESPOCHMINEDUC(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoESPOCH_MINEDUC;
+        const args =
+        {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula }
+                ]
+            }
+        };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposEspochMineduc = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
+                        for (campos of listacamposEspochMineduc) {
+                            listado.push(campos);
+                        }
+                        var institucion = ''
+                        var titulo = ''
+                        var especialidad = ''
+                        var fechaGrado =''
+
+                        for (atr of listado) {
+                            if (atr.campo == "institucion") {
+                                institucion = atr.valor;
+                            }
+                            if (atr.campo == "titulo") {
+                                titulo = atr.valor;
+                            }
+                            if (atr.campo == "especialidad") {
+                                especialidad = atr.valor;
+                            }
+                            if (atr.campo == "fechaGrado") {
+                                fechaGrado = atr.valor;
+                            }                               
+                        }
+                        
+                        var espochMineduDatos = {
+                            institucion: institucion,
+                            titulo: titulo,
+                            especialidad: especialidad,
+                            fechaGrado: fechaGrado
+
+                        }
+                        callback(espochMineduDatos)
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo dinardap: ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+async function consumodinardapESPOCHMINEDUCEstudiantes(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoESPOCHMINEDUCEstudiantes;
+        var tipo = urlAcademico.tipoCedulaEstudiante;
+        const args =
+        {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "tipo", valor: tipo },
+                    { nombre: "valor", valor: cedula }
+                ]
+            }
+        };
+        
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        console.log(jsonString)
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposEspochMineducEstudainte = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
+                        console.log(listacamposEspochMineducEstudainte)
+                        for (campos of listacamposEspochMineducEstudainte) {
+                            listado.push(campos);
+                        }
+                        var provinciaInstitucion = ''
+                        var cantonInstitucion = ''
+                        var parroquiaInstitucion = ''
+                        var amieInstitucion =''
+                        var sostenimiento = ''
+                        for (atr of listado) {
+                            if (atr.campo == "provinciaInstitucion") {
+                                provinciaInstitucion = atr.valor;
+                            }
+                            if (atr.campo == "cantonInstitucion") {
+                                cantonInstitucion = atr.valor;
+                            }
+                            if (atr.campo == "parroquiaInstitucion") {
+                                parroquiaInstitucion = atr.valor;
+                            }
+                            if (atr.campo == "amieInstitucion") {
+                                amieInstitucion = atr.valor;
+                            } 
+                            if (atr.campo == "sostenimiento") {
+                                sostenimiento = atr.valor;
+                            }                                
+                        }
+                        
+                        var espochMineduDatosEstudiante = {
+                            provinciaInstitucion: provinciaInstitucion,
+                            cantonInstitucion: cantonInstitucion,
+                            parroquiaInstitucion: parroquiaInstitucion,
+                            amieInstitucion: amieInstitucion,
+                            sostenimiento: sostenimiento
+                        }
+                        callback(espochMineduDatosEstudiante)
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo : ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+/* MINEDU */
+router.get('/cosnumodinardapESPOCHMINEDUC/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var espochMineduDatos = [];
+    var success = false;
+    try {
+        var datosespochminedu = await new Promise(resolve => { consumodinardapESPOCHMINEDUC(cedula, (valor) => { resolve(valor); }) });
+        if (datosespochminedu != null) {
+            espochMineduDatos = datosespochminedu;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: espochMineduDatos
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+router.get('/cosnumodinardapESPOCHMINEDUCEstudiantes/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var espochMineduDatosEstudiante = [];
+    var success = false;
+    try {
+        var datosespochmineduEstudiantes = await new Promise(resolve => { consumodinardapESPOCHMINEDUCEstudiantes(cedula, (valor) => { resolve(valor); }) });
+        if (datosespochmineduEstudiantes != null) {
+            espochMineduDatosEstudiante = datosespochmineduEstudiantes;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: espochMineduDatosEstudiante
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+router.get('/consumodinardapESPOCHMINEDUCCompleto/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var success = true;
+    var provinciaInstitucion = '';
+    var cantonInstitucion = '';
+    var parroquiaInstitucion = '';
+    var amieInstitucion ='';
+    var sostenimiento = '';
+    var institucion = '';
+    var titulo = '';
+    var especialidad = '';
+    var fechaGrado ='';
+    
+    try {
+        var datosespochminedu = await new Promise(resolve => { consumodinardapESPOCHMINEDUC(cedula, (valor) => { resolve(valor); }) });
+        var datosespochmineduEstudiantes = await new Promise(resolve => { consumodinardapESPOCHMINEDUCEstudiantes(cedula, (valor) => { resolve(valor); }) });
+        if (datosespochminedu || datosespochmineduEstudiantes) {
+            institucion = datosespochminedu.institucion;
+            titulo = datosespochminedu.titulo;
+            especialidad = datosespochminedu.especialidad;
+            fechaGrado = datosespochminedu.fechaGrado;
+            provinciaInstitucion = datosespochmineduEstudiantes.provinciaInstitucion;
+            cantonInstitucion = datosespochmineduEstudiantes.cantonInstitucion;
+            parroquiaInstitucion = datosespochmineduEstudiantes.parroquiaInstitucion;
+            amieInstitucion = datosespochmineduEstudiantes.amieInstitucion;
+            sostenimiento = datosespochmineduEstudiantes.sostenimiento;
+        }
+        
+        return res.json({
+            success: success,
+            institucion: institucion,
+            titulo: titulo,
+            especialidad: especialidad,
+            fechaGrado: fechaGrado,
+            provinciaInstitucion: provinciaInstitucion,
+            cantonInstitucion: cantonInstitucion,
+            parroquiaInstitucion: parroquiaInstitucion,
+            amieInstitucion: amieInstitucion,
+            sostenimiento: sostenimiento
+
+        });
+    } catch (err) {
+        console.log('Error: ' + err);
+        return res.json({
+            success: false
+        });
+    }
+});
+
 module.exports = router;

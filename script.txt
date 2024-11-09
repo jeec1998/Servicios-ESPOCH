@@ -1,0 +1,7 @@
+//Script tabla persoanaImagen//
+CREATE TABLE IF NOT EXISTS central.personaImagen (
+    id SERIAL PRIMARY KEY,
+    per_id INT REFERENCES central.persona (per_id) ON DELETE CASCADE,
+    imagen TEXT
+);
+************************************************************************

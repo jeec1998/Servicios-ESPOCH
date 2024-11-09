@@ -26,6 +26,24 @@ module.exports.obtenerdiscapacidad= function (callback) {
             client.end();
         });
 };
+/* Export para traer los datos biometricos de la base de datos  */
+module.exports.biometricos =function(cedula, callback){
+    var client = new Cliente(db);
+    var sentencia;
+    sentencia = "Select imagen from central.\"personaImagen\""
+                +"WHERE per_id='" + cedula + "' "
+        client.connect();
+        client.query(sentencia)
+            .then(response => {
+            callback(null, response.rows);
+            client.end();
+            })
+        .catch(err => {
+        callback(null, false);
+        console.error('Fallo en la Consulta', err.stack);
+        client.end();
+        });
+}
 module.exports.discapacidad = function (cedula, callback) {
     var client = new Client(db);
     var sentencia;
@@ -68,7 +86,24 @@ module.exports.actualizarPorcentajeDiscapacidad = function(carnet, porcentajeDis
         callback(error, 0);
     }
 };
-
-
-
+module.exports.obtenerPersonaPersonalizado = function (cedula,callback){
+    var client = new Client(db);
+    var sentencia;
+    sentencia = "SELECT u.\"pid_valor\", u.\"per_id\" , i.\"ifo_fechaRegistro\", i.\"ifo_registro\", t.\"tit_id\", s.\"ins_nombre\", l.\"tit_nombre\", n.\"naa_nombre\", c.\"ciu_nombre\", r.\"pro_nombre\""
+    +" FROM central.\"documentoPersonal\" u"
+    +" JOIN central.\"persona\" p ON u.\"per_id\" = p.\"per_id\" JOIN central.\"instruccionFormal\" i ON i.\"per_id\" = p.\"per_id\" JOIN central.\"tituloAcademico\" t ON t.\"tac_id\" = i.\"tac_id\" JOIN central.\"institucion\" s ON t.\"ins_id\" = s.\"ins_id\" JOIN central.\"ciudad\" c ON c.\"ciu_id\" = s.\"ciu_id\" JOIN central.\"provincia\" r ON r.\"pro_id\" = c.\"pro_id\" JOIN central.\"titulo\" l ON l.\"tit_id\" = t.\"tit_id\" JOIN central.\"nivelAcademico\" n ON n.\"naa_id\" = l.\"naa_id\""
+    +" WHERE n.\"naa_id\" = 2  AND u.\"pid_valor\"= '" + cedula + "'  "
+    
+        client.connect();
+        client.query(sentencia)
+            .then(response => {
+                callback(null, response.rows);
+                client.end();
+            })
+            .catch(err => {
+                callback(null, false);
+                console.error('Fallo en la Consulta', err.stack);
+                client.end();
+            });
+}
 /* ****************************+ */

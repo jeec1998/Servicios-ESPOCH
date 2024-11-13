@@ -95,6 +95,58 @@ router.get('/ObtenerBiometria/:cedula', async (req, res) => {
         await transaccioncentral.release();
     }
 });
+/* consulta de informacion por medio del Nombre y Apellidos */
+/* Cedula */
+router.get('/ObtenerDatosPersonaCedula/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+
+    try {
+        const consulta = `
+            SELECT p.per_id, p.per_nombres, p."per_primerApellido", p."per_segundoApellido", p.per_email, 
+                p."per_emailAlternativo", p."per_telefonoCelular", p."per_fechaNacimiento", p.etn_id, et.etn_nombre, 
+                p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p."per_telefonoCasa", p.lugarprocedencia_id, 
+                prr.prq_nombre, dir."dir_callePrincipal", dir.prq_id as idprqdireccion, 
+                (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
+                nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia
+            FROM central.persona p 
+            INNER JOIN central."documentoPersonal" d ON p.per_id=d.per_id 
+            INNER JOIN central.etnia et ON p.etn_id=et.etn_id 
+            LEFT JOIN central.direccion dir ON p.per_id=dir.per_id 
+            LEFT JOIN central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
+            LEFT JOIN central."nacionalidadPersona" np ON p.per_id=np.per_id 
+            LEFT JOIN central.nacionalidad nac ON np.nac_id=nac.nac_id 
+            INNER JOIN central.genero gn ON p.gen_id=gn.gen_id 
+            INNER JOIN central."estadoCivil" estc ON p.eci_id=estc.eci_id 
+            LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id 
+            WHERE d.pid_valor = $1
+        `;
+        const resultado = await transaccioncentral.query(consulta, [cedula]);
+
+        if (resultado.rows.length > 0) {
+            res.json({
+                success: true,
+                data: resultado.rows
+            });
+        } else {
+            res.json({
+                success: false,
+                mensaje: "No se encontraron datos para la cédula proporcionada."
+            });
+        }
+    } catch (err) {
+        console.error("Error al obtener los datos:", err);
+        res.json({
+            success: false,
+            mensaje: "Error al procesar la solicitud."
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
+
+/* Nombre */
 router.get('/ObtenerDatosPersona/:nombre', async (req, res) => {
     const nombre = req.params.nombre;
     const poolcentralizada = new Pool(db);
@@ -146,6 +198,108 @@ router.get('/ObtenerDatosPersona/:nombre', async (req, res) => {
         await transaccioncentral.release();
     }
 });
+/* primer Apellido */
+router.get('/ObtenerDatosPersonaApellido/:apellido', async (req, res) => {
+    const apellido = req.params.apellido;
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+
+    try {
+        
+        let consulta = `
+            SELECT p.per_id, p.per_nombres, p."per_primerApellido", p."per_segundoApellido", p.per_email, 
+                p."per_emailAlternativo", p."per_telefonoCelular", p."per_fechaNacimiento", p.etn_id, et.etn_nombre, 
+                p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p."per_telefonoCasa", p.lugarprocedencia_id, 
+                prr.prq_nombre, dir."dir_callePrincipal", dir.prq_id as idprqdireccion, 
+                (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
+                nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia
+            FROM central.persona p 
+            INNER JOIN central."documentoPersonal" d ON p.per_id=d.per_id 
+            INNER JOIN central.etnia et ON p.etn_id=et.etn_id 
+            LEFT JOIN central.direccion dir ON p.per_id=dir.per_id 
+            LEFT JOIN central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
+            LEFT JOIN central."nacionalidadPersona" np ON p.per_id=np.per_id 
+            LEFT JOIN central.nacionalidad nac ON np.nac_id=nac.nac_id 
+            INNER JOIN central.genero gn ON p.gen_id=gn.gen_id 
+            INNER JOIN central."estadoCivil" estc ON p.eci_id=estc.eci_id 
+            LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id 
+            WHERE p."per_primerApellido" ILIKE '%' || $1 || '%' OR p."per_segundoApellido" ILIKE '%' || $1 || '%'
+        `;
+        
+        
+        let resultado = await transaccioncentral.query(consulta, [apellido]);
+
+        if (resultado.rows.length > 0) {
+           
+            return res.json({
+                success: true,
+                data: resultado.rows
+            });
+        } 
+    } catch (err) {
+        console.error("Error al obtener los datos:", err);
+        res.json({
+            success: false,
+            mensaje: "Error al procesar la solicitud."
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
+/* Apellidos completos */
+router.get('/ObtenerDatosPersonaCompleto/:nombre/:apellido', async (req, res) => {
+    const nombre = req.params.nombre;
+    const apellido = req.params.apellido;
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+
+    try {
+        const consulta = `
+            SELECT p.per_id, p.per_nombres, p."per_primerApellido", p."per_segundoApellido", p.per_email, 
+                p."per_emailAlternativo", p."per_telefonoCelular", p."per_fechaNacimiento", p.etn_id, et.etn_nombre, 
+                p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p."per_telefonoCasa", p.lugarprocedencia_id, 
+                prr.prq_nombre, dir."dir_callePrincipal", dir.prq_id as idprqdireccion, 
+                (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
+                nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia
+            FROM central.persona p 
+            INNER JOIN central."documentoPersonal" d ON p.per_id=d.per_id 
+            INNER JOIN central.etnia et ON p.etn_id=et.etn_id 
+            LEFT JOIN central.direccion dir ON p.per_id=dir.per_id 
+            LEFT JOIN central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
+            LEFT JOIN central."nacionalidadPersona" np ON p.per_id=np.per_id 
+            LEFT JOIN central.nacionalidad nac ON np.nac_id=nac.nac_id 
+            INNER JOIN central.genero gn ON p.gen_id=gn.gen_id 
+            INNER JOIN central."estadoCivil" estc ON p.eci_id=estc.eci_id 
+            LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id 
+            WHERE p.per_nombres ILIKE '%' || $1 || '%' 
+              AND p."per_primerApellido" ILIKE '%' || $2 || '%'
+        `;
+        const resultado = await transaccioncentral.query(consulta, [nombre, apellido]);
+
+        if (resultado.rows.length > 0) {
+            res.json({
+                success: true,
+                data: resultado.rows
+            });
+        } else {
+            res.json({
+                success: false,
+                mensaje: "No se encontraron datos para el nombre y apellido proporcionados."
+            });
+        }
+    } catch (err) {
+        console.error("Error al obtener los datos:", err);
+        res.json({
+            success: false,
+            mensaje: "Error al procesar la solicitud."
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
+
+
+
 /* Actualizar por medio de la cedula */
 router.patch('/actualizacionDiscapacidad/:cedula', async (req, res) => {
     const cedula = req.params.cedula;

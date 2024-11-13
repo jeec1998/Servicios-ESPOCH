@@ -106,4 +106,6 @@ module.exports.obtenerPersonaPersonalizado = function (cedula,callback){
                 client.end();
             });
 }
+
+
 /* ****************************+ */

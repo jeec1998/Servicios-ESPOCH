@@ -1,8 +1,8 @@
 module.exports = {
   user: 'postgres',
     host: 'localhost',
-    database: 'Centralizada',
-    password: 'Reggae1998',
+    database: 'centralizada',
+    password: 'cisco123',
     port: 5432,
   /*"user": "sistema",
   //  "password": "BDSqlAdmin111",

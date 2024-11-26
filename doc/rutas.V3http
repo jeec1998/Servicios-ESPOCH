@@ -1,3 +1,6 @@
+###Obtener imagen
+GET http://localhost:8098/rutadinardapV3/ObtenerBiometria2/:cedula
+
 ###Ver todos los discapacitados
 GET http://localhost:8098/rutaActualizarV2/objpersonalizadodiscapacidad
 ### Servicios dinardap SRI

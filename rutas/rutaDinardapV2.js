@@ -313,6 +313,7 @@ router.patch('/actualizacionDiscapacidad/:cedula', async (req, res) => {
                     resolve(valor);
                 }
             });
+            console.log(personadiscapacitada)
         }).catch(err => {
             console.error("Error al obtener personadiscapacitada:", err);
         });
@@ -1792,6 +1793,27 @@ async function consumodinardapESPOCH_Senescyt(cedula, callback) {
         return callback(null);
     }
 }
+router.get('/cosnumodinardapDatosSenecyt1/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var datosSenecyt= [];
+    var success = false;
+    try {
+        var datossenecyt = await new Promise(resolve => { consumodinardapESPOCH_Senescyt(cedula, (valor) => { resolve(valor); }) });
+        if (datossenecyt != null) {
+            datosSenecyt = datossenecyt
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: datosSenecyt
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
 
 /* servicio 899 */
 async function serviciodinardapminEducacion899(cedulapersona, callback) {

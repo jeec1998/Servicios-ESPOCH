@@ -9,11 +9,13 @@ const central = require('./rutas/rutaCentral');
 const acceso = require('./rutas/rutacceso');
 const dinardap = require('./rutas/rutadinardap');
 const dinardapV2 = require('./rutas/rutaDinardapV2');
+const dinardapV3 = require('./rutas/rutadinardapV3');
 const actualizarV2 = require('./rutas/rutaActualizarV2');
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
 var cron = require('node-cron');
+const { codigoSRICompleto } = require('./config/urlAcademico');
 const dotenv = require("dotenv").config();
 
 /*var connection = new sql.ConnectionPool(config);
@@ -49,6 +51,7 @@ app.use('/rutaAcceso', acceso);
 app.use('/rutaCentral', central);
 app.use('/rutadinardap', dinardap);
 app.use('/rutaDinardapV2', dinardapV2);
+app.use('/rutadinardapV3', dinardapV3);
 app.use('/rutaActualizarV2', actualizarV2 )
 
 

@@ -2410,7 +2410,7 @@ router.get('/consumodinardapESPOCHMINEDUCCompleto/:cedula', async (req, res) => 
 });
 /* consumo servicio antiguo */
 
- router.post('/actualizacionESPOCHMINEDU/:cedula', async (req, res) => {
+ router.patch('/actualizacionESPOCHMINEDU/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     let reportebase64 = '';
     const poolcentralizada = new Pool(db);

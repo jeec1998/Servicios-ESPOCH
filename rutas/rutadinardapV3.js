@@ -1155,5 +1155,803 @@ router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
         });
     }
 });
+/* DATOS DEMOGRAFICOS */
+router.get('/cosnumodinardapDatosDomiciliarios2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var datosDemograficos = [];
+    var success = false;
+    try {
+        var datosdomiciliarios = await new Promise(resolve => { consumodinardapESPOCH_DIGERIC_DEMOGRAFICO2(cedula, (valor) => { resolve(valor); }) });
+        if (datosdomiciliarios != null) {
+            datosDemograficos = datosdomiciliarios;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: datosDemograficos
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+async function consumodinardapESPOCH_DIGERIC_DEMOGRAFICO2(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.ESPOCH_DIGERCIC_Demografico;
+        const args = {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula }
+                ]
+            }
+        };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err);
+                        callback(null);
+                    } else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposdemografico = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
+                        for (campos of listacamposdemografico) {
+                            listado.push(campos);
+                        }
+                        var callesDomicilio = '';
+                        for (atr of listado) {
+                            if (atr.campo == "callesDomicilio") {
+                                callesDomicilio = atr.valor;
+                            }
+                            if (atr.campo == "domicilio") {
+                                domicilio = atr.valor;
+                            }
+                            if (atr.campo == "estadoCivil") {
+                                estadoCivil = atr.valor;
+                            }
+                            if (atr.campo == "fechaNacimiento") {
+                                fechaNacimiento = atr.valor;
+                            }
+                            if (atr.campo == "genero") {
+                                genero = atr.valor;
+                            }
+                            if (atr.campo == "lugarNacimiento") {
+                                lugarNacimiento = atr.valor;
+                            }
+                            if (atr.campo == "nacionalidad") {
+                                nacionalidad = atr.valor;
+                            }
+                            if (atr.campo == "nombre") {
+                                nombre = atr.valor;
+                            }
+                            if (atr.campo == "numeroCasa") {
+                                numeroCasa = atr.valor;
+                            }
 
+                        }
+                        var datosDemograficos = {
+                            Nombre: nombre,
+                            Genero: genero,
+                            FechaNacimiento: fechaNacimiento,
+                            LugarNacimiento: lugarNacimiento,
+                            Nacionalida: nacionalidad,
+                            EstadoCivil: estadoCivil,
+                            Domicilio: domicilio,
+                            CallesDelDomicilio: callesDomicilio,
+                            NumeroDeCasaDomicilio: numeroCasa,
+                        };
+                        callback(datosDemograficos); 
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo de los datos Demográficos: ' + err);
+            }
+        });
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack);
+        return callback(null);
+    }
+}
+/* Impedimentos en MDT defectuoso */
+router.get('/cosnumodinardapDatosMDT2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var datosMDT = [];
+    var success = false;
+    try {
+        var datosmdt = await new Promise(resolve => { consumodinardapESPOCH_MDT_Impedimentos2(cedula, (valor) => { resolve(valor); }) });
+        if (datosmdt != null) {
+            datosMDT = datosmdt;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: datosMDT
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+async function consumodinardapESPOCH_MDT_Impedimentos2(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.ESPOCH_MDT_Impedimentos;
+        const args =
+        {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula }
+                ]
+            }
+        };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposdatosMDT = objjson.entidades.entidad[1];
+                        for (campos of listacamposdatosMDT) {
+                            listado.push(campos);
+                        }
+                        console.log(listacamposdatosMDT)
+                        var Impedimento = ''
+                        var fechaImpedimento = ''
+                        for (atr of listado) {
+                           
+                            if (atr.campo == "Impedimento") {
+                                Impedimento = atr.valor;
+                            }
+                            if (atr.campo == "fechaImpedimento") {
+                                fechaImpedimento = atr.valor;
+                            }
+                        }
+                        
+                        var datosMDT = {
+                            Impedimento: Impedimento,
+                            fechaImpedimento: fechaImpedimento,
+                        }
+                        callback(datosMDT)
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo dinardap: ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+/* minesterio de eduacaion codigo de refrendacion */
+router.get('/cosnumodinardapminEducaion2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var espochMineduDatos = [];
+    var success = false;
+    try {
+        var datosespoch = await new Promise(resolve => { serviciodinardapminEducacion2(cedula, (err, valor) => { resolve(valor); }) });
+        if (datosespoch != null) {
+            espochMineduDatos = datosespoch;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: espochMineduDatos
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+async function serviciodinardapminEducacion2(cedulapersona, callback) {
+    let listado = [];
+    try {
+        let registroministerio = {};
+        var codigorefrendacion = 1;;
+        var url = urlAcademico.urlwsdl;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoPaqMinEducacion;
+        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedulapersona };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.getFichaGeneral(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error servicio: ' + codigopaquete + err)
+                        return callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.return);
+                        var objjson = JSON.parse(jsonString);
+                        let listaregistrosdinardap = objjson.instituciones[0].datosPrincipales.registros;
+                        for (registro of listaregistrosdinardap) {
+                             
+                            if (registro.campo == 'codigoRefrendacion') {
+                                codigorefrendacion = registro.valor;
+                            }
+                        }
+                        registroministerio = {
+                            codigorefrendacion: codigorefrendacion,
+                           
+                        }
+                        listado.push(registroministerio)
+                    }
+                    return callback(null, registroministerio)
+        });
+            } else {
+                return callback(null);
+                console.log('Error consumo dinardap' + err)
+            }
+        });
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+/* consumo de Servicio estudiantes */
+router.get('/cosnumodinardapESPOCHMINEDUCEstudiantes2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var espochMineduDatosEstudiante = [];
+    var success = false;
+    try {
+        var datosespochmineduEstudiantes = await new Promise(resolve => { consumodinardapESPOCHMINEDUCEstudiantes2(cedula, (valor) => { resolve(valor); }) });
+        if (datosespochmineduEstudiantes != null) {
+            espochMineduDatosEstudiante = datosespochmineduEstudiantes;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: espochMineduDatosEstudiante
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+async function consumodinardapESPOCHMINEDUCEstudiantes2(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoESPOCHMINEDUCEstudiantes;
+        var tipo = urlAcademico.tipoCedulaEstudiante;
+        const args =
+        {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "tipo", valor: tipo },
+                    { nombre: "valor", valor: cedula }
+                ]
+            }
+        };
+        
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposEspochMineducEstudainte = objjson.entidades.entidad[0].filas.fila[0].columnas.columna
+                        for (campos of listacamposEspochMineducEstudainte) {
+                            listado.push(campos);
+                        }
+                        var provinciaInstitucion = ''
+                        var cantonInstitucion = ''
+                        var parroquiaInstitucion = ''
+                        var amieInstitucion =''
+                        var sostenimiento = ''
+                        for (atr of listado) {
+                            if (atr.campo == "provinciaInstitucion") {
+                                provinciaInstitucion = atr.valor;
+                            }
+                            if (atr.campo == "cantonInstitucion") {
+                                cantonInstitucion = atr.valor;
+                            }
+                            if (atr.campo == "parroquiaInstitucion") {
+                                parroquiaInstitucion = atr.valor;
+                            }
+                            if (atr.campo == "amieInstitucion") {
+                                amieInstitucion = atr.valor;
+                            } 
+                            if (atr.campo == "sostenimiento") {
+                                sostenimiento = atr.valor;
+                            }                                
+                        }
+                        
+                        var espochMineduDatosEstudiante = {
+                            provinciaInstitucion: provinciaInstitucion,
+                            cantonInstitucion: cantonInstitucion,
+                            parroquiaInstitucion: parroquiaInstitucion,
+                            amieInstitucion: amieInstitucion,
+                            sostenimiento: sostenimiento
+                        }
+                        callback(espochMineduDatosEstudiante)
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo : ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+/* consumo completo de estudiantes */
+router.get('/consumodinardapESPOCHMINEDUCCompleto2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var success = true;
+    var provinciaInstitucion = '';
+    var cantonInstitucion = '';
+    var parroquiaInstitucion = '';
+    var amieInstitucion ='';
+    var sostenimiento = '';
+    var institucion = '';
+    var titulo = '';
+    var especialidad = '';
+    var fechaGrado ='';
+    var codigorefrendacion = ''; 
+    
+    try {
+        var datosespochminedu = await new Promise(resolve => { consumodinardapESPOCHMINEDUC2(cedula, (valor) => { resolve(valor); }) });
+        var datosespochmineduEstudiantes = await new Promise(resolve => { consumodinardapESPOCHMINEDUCEstudiantes2(cedula, (valor) => { resolve(valor); }) });
+        var registroministerio = await new Promise(resolve => { serviciodinardapminEducacion2(cedula, (err, valor) => { resolve(valor); }) });
+        if ( registroministerio || datosespochminedu || datosespochmineduEstudiantes ) {
+            codigorefrendacion = registroministerio.codigorefrendacion;
+            institucion = datosespochminedu.institucion;
+            titulo = datosespochminedu.titulo;
+            especialidad = datosespochminedu.especialidad;
+            fechaGrado = datosespochminedu.fechaGrado;
+            provinciaInstitucion = datosespochmineduEstudiantes.provinciaInstitucion;
+            cantonInstitucion = datosespochmineduEstudiantes.cantonInstitucion;
+            parroquiaInstitucion = datosespochmineduEstudiantes.parroquiaInstitucion;
+            amieInstitucion = datosespochmineduEstudiantes.amieInstitucion;
+            sostenimiento = datosespochmineduEstudiantes.sostenimiento;
+           
+        }
+  
+        return res.json({
+            success: success,
+            codigorefrendacion: codigorefrendacion,
+            institucion: institucion,
+            titulo: titulo,
+            especialidad: especialidad,
+            fechaGrado: fechaGrado,
+            provinciaInstitucion: provinciaInstitucion,
+            cantonInstitucion: cantonInstitucion,
+            parroquiaInstitucion: parroquiaInstitucion,
+            amieInstitucion: amieInstitucion,
+            sostenimiento: sostenimiento
+
+        });
+    } catch (err) {
+        console.log('Error: ' + err);
+        return res.json({
+            success: false
+        });
+    }
+});
+/* consumo servicio antiguo */
+
+router.patch('/actualizacionESPOCHMINEDU2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    let reportebase64 = '';
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+    let resultadosFinales = [];
+    try {
+        var personapersonalizado = await new Promise((resolve, reject) => {
+            actualizarV2.obtenerPersonaPersonalizado(cedula, (err, valor) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(valor);
+                }
+            });
+        }).catch(err => {
+            console.error("Error al obtener la información por medio de la cedula :", err);
+        });
+        console.log(personapersonalizado)
+        if (personapersonalizado.length > 0) {
+            for (const persona of personapersonalizado) {
+                const cedula = persona.pid_valor;
+                console.log(cedula)
+                let success = false;
+                try {
+                    const datosespochminedu = await new Promise(resolve => { consumodinardapESPOCHMINEDUC2(cedula, (valor) => { resolve(valor); }) });
+                    const datosespochmineduEstudiantes = await new Promise(resolve => { consumodinardapESPOCHMINEDUCEstudiantes2(cedula, (valor) => { resolve(valor); }) });
+                    const registroministerio = await new Promise(resolve => { serviciodinardapminEducacion2(cedula, (err, valor) => { resolve(valor); }) });
+                   
+                    console.log(registroministerio)
+                    if(persona.ifo_registro === registroministerio.codigorefrendacion){
+                        const  codigorefrendacion = persona.inf_registro;
+                        const actualizacionCiudad = datosespochmineduEstudiantes.cantonInstitucion;
+                        console.log(actualizacionCiudad)
+                        try {
+                            const query =`
+                            UPDATE central.institucion s  
+                            SET ciu_id = (
+                            SELECT c.ciu_id
+                            FROM   central.ciudad c
+                            WHERE c.ciu_nombre = $1
+                            )   
+                            FROM central."instruccionFormal" i
+                            WHERE i.ifo_registro = $2;
+                            `;
+                            const datos = await transaccioncentral.query(query, [actualizacionCiudad, codigorefrendacion ]);
+
+                            if (datos.rowCount > 0) {
+                                console.log("Ciudad actualizada correctamente.");
+                                resultadosFinales.push({
+                                    success: true,
+                                    cedula,
+                                    actualizacionCiudad
+                                });
+                            } else {
+                                console.log("No se pudo actualizar la Ciudad.");
+                            }
+                        } catch (error) {
+                            console.error("Error durante la actualización:", error);
+                        }
+                    }
+                
+                } catch (err) {
+                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
+                    resultadosFinales.push({
+                        success: false,
+                        BaseDatos: persona,
+                        mensaje: 'Error al procesar los datos para la cédula proporcionada.'
+                    });
+                }
+            }
+            return res.json({
+                success: true,
+                listado: resultadosFinales
+            });
+        } else {
+            return res.json({
+                success: false,
+                listado: []
+            });
+        }
+        } catch (err) {
+        console.error('Error: ', err);
+        return res.json({
+            success: false,
+            mensaje: 'Error al procesar la solicitud.'
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});  
+/* MINEDU */
+router.get('/cosnumodinardapESPOCHMINEDUC2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var espochMineduDatos = [];
+    var success = false;
+    try {
+        var datosespochminedu = await new Promise(resolve => { consumodinardapESPOCHMINEDUC2(cedula, (valor) => { resolve(valor); }) });
+        if (datosespochminedu != null) {
+            espochMineduDatos = datosespochminedu;
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: espochMineduDatos
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+async function consumodinardapESPOCHMINEDUC2(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoESPOCH_MINEDUC;
+        const args =
+        {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula }
+                ]
+            }
+        };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err)
+                        callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposEspochMineduc = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
+                        for (campos of listacamposEspochMineduc) {
+                            listado.push(campos);
+                        }
+                        var institucion = ''
+                        var titulo = ''
+                        var especialidad = ''
+                        var fechaGrado =''
+
+                        for (atr of listado) {
+                            if (atr.campo == "institucion") {
+                                institucion = atr.valor;
+                            }
+                            if (atr.campo == "titulo") {
+                                titulo = atr.valor;
+                            }
+                            if (atr.campo == "especialidad") {
+                                especialidad = atr.valor;
+                            }
+                            if (atr.campo == "fechaGrado") {
+                                fechaGrado = atr.valor;
+                            }                               
+                        }
+                        
+                        var espochMineduDatos = {
+                            institucion: institucion,
+                            titulo: titulo,
+                            especialidad: especialidad,
+                            fechaGrado: fechaGrado
+
+                        }
+                        callback(espochMineduDatos)
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo dinardap: ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
+/* servicio 895 */
+async function consumodinardapESPOCH_Senescyt895(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoPaqSenescyt;
+        const args = {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula }
+                ]
+            }
+        };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err);
+                        callback(null);
+                    } else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        var objjson = JSON.parse(jsonString);
+                        let listacampossenecyt = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
+                        for (campos of listacampossenecyt) {
+                            listado.push(campos);
+                        }
+                        var fechaGrado = '';
+                        var fechaRegistro = '';
+                        var ies = '';
+                        var nivel = '';
+                        var nombreTitulo = '';
+                        var numeroIdentificacion = '';
+                        var numeroRegistro = '';
+                        var tipoExtranjeroColegio = '';
+                        var tipoTitulo = '';
+                        for (atr of listado) {
+                            if (atr.campo == "fechaGrado") {
+                                fechaGrado = atr.valor;
+                            }
+                            if (atr.campo == "fechaRegistro") {
+                                fechaRegistro = atr.valor;
+                            }
+                            if (atr.campo == "ies") {
+                                ies = atr.valor;
+                            }
+                            if (atr.campo == "nivel") {
+                                nivel = atr.valor;
+                            }
+                            if (atr.campo == "nombreTitulo") {
+                                nombreTitulo = atr.valor;
+                            }
+                            if (atr.campo == "numeroIdentificacion") {
+                                numeroIdentificacion = atr.valor;
+                            }
+                            if (atr.campo == "numeroRegistro") {
+                                numeroRegistro = atr.valor;
+                            }
+                            if (atr.campo == "tipoExtranjeroColegio") {
+                                tipoExtranjeroColegio = atr.valor;
+                            }
+                            if (atr.campo == "tipoTitulo") {
+                                tipoTitulo = atr.valor;
+                            }
+
+                        }
+                        var datosSenecyt = {
+                            Fecha_De_Grado: fechaGrado,
+                            Fecha_Registro: fechaRegistro,
+                            IES: ies,
+                            Nivel: nivel,
+                            Nombre_Titulo: nombreTitulo, 
+                            Numero_Identificacion: numeroIdentificacion,
+                            NumeroRegistro: numeroRegistro,
+                            TipoExtranjeroColegio: tipoExtranjeroColegio,
+                            TipoTitulo: tipoTitulo
+                        };
+                        callback(datosSenecyt); 
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo de los datos Demográficos: ' + err);
+            }
+        });
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack);
+        return callback(null);
+    }
+}
+router.get('/cosnumodinardapDatosSenecyt2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var datosSenecyt= [];
+    var success = false;
+    try {
+        var datossenecyt = await new Promise(resolve => { consumodinardapESPOCH_Senescyt895(cedula, (valor) => { resolve(valor); }) });
+        if (datossenecyt != null) {
+            datosSenecyt = datossenecyt
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: datosSenecyt
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+/*   DATOS CNE*/
+router.get('/cosnumodinardapDatosCNE2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var datosCne= [];
+    var success = false;
+    try {
+        var datoscne = await new Promise(resolve => { consumodinardapESPOCH_CNE2(cedula, (valor) => { resolve(valor); }) });
+        if (datoscne != null) {
+            datosCne = datoscne
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: datosCne
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+async function consumodinardapESPOCH_CNE2(cedula, callback) {
+    try {
+        let listado = [];
+        let listadevuelta = [];
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.ESPOCH_CNE;
+        const args =
+        {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula }
+                ]
+            }
+        };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.consultar(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error: ' + err);
+                        callback(null);
+                    } else {
+                        var jsonString = JSON.stringify(result.paquete);
+                        var objjson = JSON.parse(jsonString);
+                        let listacamposcne = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
+                        for (campos of listacamposcne) {
+                            listado.push(campos);
+                        }
+                        var multa= '';
+                        for (atr of listado) {
+                            if (atr.campo == "multa") {
+                                multa = atr.valor;
+                            }                
+
+                        }
+                        var datosCne = {
+                           multa: multa,
+                        };
+                        callback(datosCne); 
+                    }
+                });
+            } else {
+                callback(null);
+                console.log('Error consumo : ' + err)
+            }
+
+        }
+        );
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+}
 module.exports = router;

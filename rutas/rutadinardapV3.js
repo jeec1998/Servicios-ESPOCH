@@ -20,6 +20,270 @@ const bd = require("../config/baseMaster");
 var cron = require('node-cron');
 const { list } = require("pdfkit");
 const actualizarV2 = require('./../modelo/actualizarV2');
+/* consulta de informacion por medio del Nombre y Apellidos */
+/* Cedula */
+router.get('/ObtenerDatosPersonaCedula2/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+
+    try {
+        const consulta = `
+            SELECT p.per_id, p.per_nombres, p."per_primerApellido", p."per_segundoApellido", p.per_email, 
+                p."per_emailAlternativo", p."per_telefonoCelular", p."per_fechaNacimiento", p.etn_id, et.etn_nombre, 
+                p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p."per_telefonoCasa", p.lugarprocedencia_id, 
+                prr.prq_nombre, dir."dir_callePrincipal", dir.prq_id as idprqdireccion, 
+                (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
+                nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia
+            FROM central.persona p 
+            INNER JOIN central."documentoPersonal" d ON p.per_id=d.per_id 
+            INNER JOIN central.etnia et ON p.etn_id=et.etn_id 
+            LEFT JOIN central.direccion dir ON p.per_id=dir.per_id 
+            LEFT JOIN central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
+            LEFT JOIN central."nacionalidadPersona" np ON p.per_id=np.per_id 
+            LEFT JOIN central.nacionalidad nac ON np.nac_id=nac.nac_id 
+            INNER JOIN central.genero gn ON p.gen_id=gn.gen_id 
+            INNER JOIN central."estadoCivil" estc ON p.eci_id=estc.eci_id 
+            LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id 
+            WHERE d.pid_valor = $1
+        `;
+        const resultado = await transaccioncentral.query(consulta, [cedula]);
+
+        if (resultado.rows.length > 0) {
+            res.json({
+                success: true,
+                data: resultado.rows
+            });
+        } else {
+            res.json({
+                success: false,
+                mensaje: "No se encontraron datos para la cédula proporcionada."
+            });
+        }
+    } catch (err) {
+        console.error("Error al obtener los datos:", err);
+        res.json({
+            success: false,
+            mensaje: "Error al procesar la solicitud."
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
+
+/* Nombre */
+router.get('/ObtenerDatosPersona2/:nombre', async (req, res) => {
+    const nombre = req.params.nombre;
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+
+    try {
+        const consulta = `
+            SELECT p.per_id, p.per_nombres, p."per_primerApellido", p."per_segundoApellido", p.per_email, 
+                p."per_emailAlternativo", p."per_telefonoCelular", p."per_fechaNacimiento", p.etn_id, et.etn_nombre, 
+                p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p."per_telefonoCasa", p.lugarprocedencia_id, 
+                prr.prq_nombre, dir."dir_callePrincipal", dir.prq_id as idprqdireccion, 
+                (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
+                nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia
+            FROM central.persona p 
+            INNER JOIN central."documentoPersonal" d ON p.per_id=d.per_id 
+            INNER JOIN central.etnia et ON p.etn_id=et.etn_id 
+            LEFT JOIN central.direccion dir ON p.per_id=dir.per_id 
+            LEFT JOIN central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
+            LEFT JOIN central."nacionalidadPersona" np ON p.per_id=np.per_id 
+            LEFT JOIN central.nacionalidad nac ON np.nac_id=nac.nac_id 
+            INNER JOIN central.genero gn ON p.gen_id=gn.gen_id 
+            INNER JOIN central."estadoCivil" estc ON p.eci_id=estc.eci_id 
+            LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id 
+            WHERE p.per_nombres ILIKE '%' || $1 || '%'
+        `;
+        const resultado = await transaccioncentral.query(consulta, [nombre]);
+
+        if (resultado.rows.length > 0) {
+            
+            res.json({
+                success: true,
+                data: resultado.rows
+            });
+        } else {
+           
+        
+            res.json({
+                success: false,
+                mensaje: "No se encontraron datos para el nombre proporcionado."
+            });
+        }
+    } catch (err) {
+        console.error("Error al obtener los datos:", err);
+        res.json({
+            success: false,
+            mensaje: "Error al procesar la solicitud."
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
+/* primer Apellido */
+router.get('/ObtenerDatosPersonaApellido2/:apellido', async (req, res) => {
+    const apellido = req.params.apellido;
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+
+    try {
+        
+        let consulta = `
+           SELECT 
+    p.per_id, 
+    p.per_nombres, 
+    p."per_primerApellido",
+    p."per_segundoApellido" , 
+    p.per_email, 
+    p."per_emailAlternativo", 
+    p."per_telefonoCelular", 
+    p."per_fechaNacimiento", 
+    p.etn_id, 
+    et.etn_nombre, 
+    p.eci_id, 
+    estc.eci_nombre, 
+    p.gen_id, 
+    gn.gen_nombre, 
+    p."per_telefonoCasa", 
+    p.lugarprocedencia_id, 
+    prr.prq_nombre, 
+    dir."dir_callePrincipal", 
+    dir.prq_id as idprqdireccion, 
+    (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
+    nac.nac_id, 
+    nac.nac_nombre, 
+    p.sex_id, 
+    sex_nombre as sexo, 
+    p.per_procedencia
+FROM 
+    central.persona p 
+INNER JOIN 
+    central."documentoPersonal" d ON p.per_id=d.per_id 
+INNER JOIN 
+    central.etnia et ON p.etn_id=et.etn_id 
+LEFT JOIN 
+    central.direccion dir ON p.per_id=dir.per_id 
+LEFT JOIN 
+    central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
+LEFT JOIN 
+    central."nacionalidadPersona" np ON p.per_id=np.per_id 
+LEFT JOIN 
+    central.nacionalidad nac ON np.nac_id=nac.nac_id 
+INNER JOIN 
+    central.genero gn ON p.gen_id=gn.gen_id 
+INNER JOIN 
+    central."estadoCivil" estc ON p.eci_id=estc.eci_id 
+LEFT JOIN 
+    central.sexo ON sexo.sex_id = p.sex_id 
+WHERE 
+    p."per_primerApellido" || p."per_segundoApellido" ILIKE '%' || $1 || '%';
+
+        `;
+        
+        
+        let resultado = await transaccioncentral.query(consulta, [apellido]);
+
+        if (resultado.rows.length > 0) {
+           
+            return res.json({
+                success: true,
+                data: resultado.rows
+            });
+        } 
+    } catch (err) {
+        console.error("Error al obtener los datos:", err);
+        res.json({
+            success: false,
+            mensaje: "Error al procesar la solicitud."
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
+/* Apellidos completos */
+router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
+    const completo = req.params.completo;  // Cambié de apellido a completo
+    const poolcentralizada = new Pool(db);
+    const transaccioncentral = await poolcentralizada.connect();
+
+    try {
+        let consulta = `
+        SELECT 
+            p.per_id, 
+            REPLACE(p.per_nombres, ' ', '') as per_nombres, 
+            p."per_primerApellido",
+            p."per_segundoApellido", 
+            p.per_email, 
+            p."per_emailAlternativo", 
+            p."per_telefonoCelular", 
+            p."per_fechaNacimiento", 
+            p.etn_id, 
+            et.etn_nombre, 
+            p.eci_id, 
+            estc.eci_nombre, 
+            p.gen_id, 
+            gn.gen_nombre, 
+            p."per_telefonoCasa", 
+            p.lugarprocedencia_id, 
+            prr.prq_nombre, 
+            dir."dir_callePrincipal", 
+            dir.prq_id as idprqdireccion, 
+            (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
+            nac.nac_id, 
+            nac.nac_nombre, 
+            p.sex_id, 
+            sex_nombre as sexo, 
+            p.per_procedencia
+        FROM 
+            central.persona p 
+        INNER JOIN 
+            central."documentoPersonal" d ON p.per_id=d.per_id 
+        INNER JOIN 
+            central.etnia et ON p.etn_id=et.etn_id 
+        LEFT JOIN 
+            central.direccion dir ON p.per_id=dir.per_id 
+        LEFT JOIN 
+            central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
+        LEFT JOIN 
+            central."nacionalidadPersona" np ON p.per_id=np.per_id 
+        LEFT JOIN 
+            central.nacionalidad nac ON np.nac_id=nac.nac_id 
+        INNER JOIN 
+            central.genero gn ON p.gen_id=gn.gen_id 
+        INNER JOIN 
+            central."estadoCivil" estc ON p.eci_id=estc.eci_id 
+        LEFT JOIN 
+            central.sexo ON sexo.sex_id = p.sex_id 
+        WHERE 
+            REPLACE(p.per_nombres, ' ', '') || p."per_primerApellido" || p."per_segundoApellido" ILIKE '%' || $1 || '%';
+        `;
+
+        let resultado = await transaccioncentral.query(consulta, [completo]);
+
+        if (resultado.rows.length > 0) {
+            return res.json({
+                success: true,
+                data: resultado.rows
+            });
+        } else {
+            return res.json({
+                success: false,
+                mensaje: "No se encontraron resultados."
+            });
+        }
+    } catch (err) {
+        console.error("Error al obtener los datos:", err);
+        res.json({
+            success: false,
+            mensaje: "Error al procesar la solicitud."
+        });
+    } finally {
+        await transaccioncentral.release();
+    }
+});
 /* Obtener Biometria (Imagen) */
 router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
@@ -1898,6 +2162,109 @@ router.get('/cosnumodinardapDatosCNE2/:cedula', async (req, res) => {
         });
     }
 });
+router.get('/cosnumodinardapservici899/:cedula', async (req, res) => {
+    const cedula = req.params.cedula;
+    var datosRegistro= [];
+    var success = false;
+    try {
+        var datosregistro = await new Promise(resolve => { serviciodinardap899(cedula, (valor) => { resolve(valor); }) });
+        
+        if (datosregistro != null) {
+            datosRegistro = datosregistro
+            success = true;
+        }
+        return res.json({
+            success: success,
+            listado: datosRegistro
+        });
+    } catch (err) {
+        console.log('Error: ' + err)
+        return res.json({
+            success: false
+        });
+    }
+});
+
+/* servicio 899 */
+async function serviciodinardap899(cedulapersona, callback) {
+    let listado = [];
+    try {
+        let registroministerio = {};
+        var cedula = "";
+        var nombre = "";
+        var institucion = "";
+        var titulo = "";
+        var especialidad = "";
+        var numeroRefrendacion = 1;
+        var codigorefrendacion = 1;
+        var fechagrado = 1;
+        var url = urlAcademico.urlwsdl;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoPaqMinEducacion;
+        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedulapersona };
+        soap.createClient(url, async function (err, client) {
+            if (!err) {
+                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+                client.getFichaGeneral(args, async function (err, result) {
+                    if (err) {
+                        console.log('Error servicio: ' + codigopaquete + err)
+                        return callback(null);
+                    }
+                    else {
+                        var jsonString = JSON.stringify(result.return);
+                        var objjson = JSON.parse(jsonString);
+                        let listaregistrosdinardap = objjson.instituciones[0].datosPrincipales.registros;
+                        
+                        for (registro of listaregistrosdinardap) {
+                            if (registro.campo == 'cedula') {
+                                cedula = registro.valor;
+                            }
+                            if (registro.campo == 'nombre') {
+                                nombre = registro.valor;
+                            }
+                            if (registro.campo == 'institucion') {
+                                institucion = registro.valor;
+                            }
+                            if (registro.campo == 'titulo') {
+                                titulo = registro.valor;
+                            }
+                            if (registro.campo == 'espcialidad') {
+                                especialidad = registro.valor;
+                            }
+                            if (registro.campo == 'numeroRefrendacion')
+                            if (registro.campo == 'codigoRefrendacion') {
+                                codigorefrendacion = registro.valor;
+                            }
+                            if (registro.campo == 'fechaGrado') {
+                                fechagrado = registro.valor;
+                            }
+                        }
+                        registroministerio = {
+                            cedula: cedula,
+                            nombre: nombre,
+                            institucion: institucion,
+                            titulo: titulo,
+                            especialidad: especialidad,
+                            codigorefrendacion: codigorefrendacion,
+                            fechagrado: fechagrado,
+                            nivel: 2
+                        }
+                        listado.push(registroministerio)
+                    }
+                    return callback(listado)
+                });
+            } else {
+                return callback(null);
+                console.log('Error consumo dinardap' + err)
+            }
+        });
+    } catch (err) {
+        console.error('Fallo en la Consulta', err.stack)
+        return callback(null);
+    }
+    console.log(listado)
+}
 async function consumodinardapESPOCH_CNE2(cedula, callback) {
     try {
         let listado = [];

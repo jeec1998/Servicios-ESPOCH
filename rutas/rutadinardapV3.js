@@ -123,7 +123,7 @@ router.get('/ObtenerDatosPersona2/:nombre', async (req, res) => {
         await transaccioncentral.release();
     }
 });
-/* primer Apellido */
+/*  Apellidos */
 router.get('/ObtenerDatosPersonaApellido2/:apellido', async (req, res) => {
     const apellido = req.params.apellido;
     const poolcentralizada = new Pool(db);
@@ -203,9 +203,9 @@ WHERE
         await transaccioncentral.release();
     }
 });
-/* Apellidos completos */
+/*  completos */
 router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
-    const completo = req.params.completo;  // Cambié de apellido a completo
+    const completo = req.params.completo;  
     const poolcentralizada = new Pool(db);
     const transaccioncentral = await poolcentralizada.connect();
 
@@ -1576,13 +1576,14 @@ async function consumodinardapESPOCH_MDT_Impedimentos2(cedula, callback) {
                     else {
                         var jsonString = JSON.stringify(result.paquete);
                         var objjson = JSON.parse(jsonString);
-                        let listacamposdatosMDT = objjson.entidades.entidad[1];
+                        let listacamposdatosMDT = objjson.entidades.entidad[1].filas.fila[0].columnas.columna
                         for (campos of listacamposdatosMDT) {
                             listado.push(campos);
                         }
-                        console.log(listacamposdatosMDT)
+                        
                         var Impedimento = ''
                         var fechaImpedimento = ''
+                        var tipoImpedimento =''
                         for (atr of listado) {
                            
                             if (atr.campo == "Impedimento") {
@@ -1591,11 +1592,15 @@ async function consumodinardapESPOCH_MDT_Impedimentos2(cedula, callback) {
                             if (atr.campo == "fechaImpedimento") {
                                 fechaImpedimento = atr.valor;
                             }
+                            if (atr.campo == "tipoImpedimento") {
+                                tipoImpedimento = atr.valor;
+                            }
                         }
                         
                         var datosMDT = {
                             Impedimento: Impedimento,
                             fechaImpedimento: fechaImpedimento,
+                            tipoImpedimento: tipoImpedimento,
                         }
                         callback(datosMDT)
                     }

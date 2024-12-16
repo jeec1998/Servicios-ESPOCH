@@ -16,15 +16,15 @@ module.exports.obtenerdiscapacidad= function (callback) {
     
     client.connect();
     client.query(sentencia)
-        .then(response => {
-            callback(null, response.rows);
-            client.end();
-        })
-        .catch(err => {
-            callback(null, false);
-            console.error('Fallo en la Consulta', err.stack);
-            client.end();
-        });
+    .then(response => {
+    callback(null, response.rows);
+    client.end();
+    })
+.catch(err => {
+callback(null, false);
+console.error('Fallo en la Consulta', err.stack);
+client.end();
+});
 };
 /* Export para traer los datos biometricos de la base de datos  */
 module.exports.biometricos =function(cedula, callback){

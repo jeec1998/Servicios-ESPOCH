@@ -21,191 +21,9 @@ var cron = require('node-cron');
 const { list } = require("pdfkit");
 const actualizarV2 = require('./../modelo/actualizarV2');
 /* consulta de informacion por medio del Nombre y Apellidos */
-/* Cedula */
-router.get('/ObtenerDatosPersonaCedula2/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
-    const poolcentralizada = new Pool(db);
-    const transaccioncentral = await poolcentralizada.connect();
-
-    try {
-        const consulta = `
-            SELECT p.per_id, p.per_nombres, p."per_primerApellido", p."per_segundoApellido", p.per_email, 
-                p."per_emailAlternativo", p."per_telefonoCelular", p."per_fechaNacimiento", p.etn_id, et.etn_nombre, 
-                p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p."per_telefonoCasa", p.lugarprocedencia_id, 
-                prr.prq_nombre, dir."dir_callePrincipal", dir.prq_id as idprqdireccion, 
-                (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
-                nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia
-            FROM central.persona p 
-            INNER JOIN central."documentoPersonal" d ON p.per_id=d.per_id 
-            INNER JOIN central.etnia et ON p.etn_id=et.etn_id 
-            LEFT JOIN central.direccion dir ON p.per_id=dir.per_id 
-            LEFT JOIN central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
-            LEFT JOIN central."nacionalidadPersona" np ON p.per_id=np.per_id 
-            LEFT JOIN central.nacionalidad nac ON np.nac_id=nac.nac_id 
-            INNER JOIN central.genero gn ON p.gen_id=gn.gen_id 
-            INNER JOIN central."estadoCivil" estc ON p.eci_id=estc.eci_id 
-            LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id 
-            WHERE d.pid_valor = $1
-        `;
-        const resultado = await transaccioncentral.query(consulta, [cedula]);
-
-        if (resultado.rows.length > 0) {
-            res.json({
-                success: true,
-                data: resultado.rows
-            });
-        } else {
-            res.json({
-                success: false,
-                mensaje: "No se encontraron datos para la cédula proporcionada."
-            });
-        }
-    } catch (err) {
-        console.error("Error al obtener los datos:", err);
-        res.json({
-            success: false,
-            mensaje: "Error al procesar la solicitud."
-        });
-    } finally {
-        await transaccioncentral.release();
-    }
-});
-
-/* Nombre */
-router.get('/ObtenerDatosPersona2/:nombre', async (req, res) => {
-    const nombre = req.params.nombre;
-    const poolcentralizada = new Pool(db);
-    const transaccioncentral = await poolcentralizada.connect();
-
-    try {
-        const consulta = `
-            SELECT p.per_id, p.per_nombres, p."per_primerApellido", p."per_segundoApellido", p.per_email, 
-                p."per_emailAlternativo", p."per_telefonoCelular", p."per_fechaNacimiento", p.etn_id, et.etn_nombre, 
-                p.eci_id, estc.eci_nombre, p.gen_id, gn.gen_nombre, p."per_telefonoCasa", p.lugarprocedencia_id, 
-                prr.prq_nombre, dir."dir_callePrincipal", dir.prq_id as idprqdireccion, 
-                (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
-                nac.nac_id, nac.nac_nombre, p.sex_id, sex_nombre as sexo, p.per_procedencia
-            FROM central.persona p 
-            INNER JOIN central."documentoPersonal" d ON p.per_id=d.per_id 
-            INNER JOIN central.etnia et ON p.etn_id=et.etn_id 
-            LEFT JOIN central.direccion dir ON p.per_id=dir.per_id 
-            LEFT JOIN central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
-            LEFT JOIN central."nacionalidadPersona" np ON p.per_id=np.per_id 
-            LEFT JOIN central.nacionalidad nac ON np.nac_id=nac.nac_id 
-            INNER JOIN central.genero gn ON p.gen_id=gn.gen_id 
-            INNER JOIN central."estadoCivil" estc ON p.eci_id=estc.eci_id 
-            LEFT JOIN central.sexo ON sexo.sex_id = p.sex_id 
-            WHERE p.per_nombres ILIKE '%' || $1 || '%'
-        `;
-        const resultado = await transaccioncentral.query(consulta, [nombre]);
-
-        if (resultado.rows.length > 0) {
-            
-            res.json({
-                success: true,
-                data: resultado.rows
-            });
-        } else {
-           
-        
-            res.json({
-                success: false,
-                mensaje: "No se encontraron datos para el nombre proporcionado."
-            });
-        }
-    } catch (err) {
-        console.error("Error al obtener los datos:", err);
-        res.json({
-            success: false,
-            mensaje: "Error al procesar la solicitud."
-        });
-    } finally {
-        await transaccioncentral.release();
-    }
-});
-/*  Apellidos */
-router.get('/ObtenerDatosPersonaApellido2/:apellido', async (req, res) => {
-    const apellido = req.params.apellido;
-    const poolcentralizada = new Pool(db);
-    const transaccioncentral = await poolcentralizada.connect();
-
-    try {
-        
-        let consulta = `
-           SELECT 
-    p.per_id, 
-    p.per_nombres, 
-    p."per_primerApellido",
-    p."per_segundoApellido" , 
-    p.per_email, 
-    p."per_emailAlternativo", 
-    p."per_telefonoCelular", 
-    p."per_fechaNacimiento", 
-    p.etn_id, 
-    et.etn_nombre, 
-    p.eci_id, 
-    estc.eci_nombre, 
-    p.gen_id, 
-    gn.gen_nombre, 
-    p."per_telefonoCasa", 
-    p.lugarprocedencia_id, 
-    prr.prq_nombre, 
-    dir."dir_callePrincipal", 
-    dir.prq_id as idprqdireccion, 
-    (SELECT prq_nombre FROM central.parroquia WHERE prq_id=dir.prq_id) as parroquiadireccion, 
-    nac.nac_id, 
-    nac.nac_nombre, 
-    p.sex_id, 
-    sex_nombre as sexo, 
-    p.per_procedencia
-FROM 
-    central.persona p 
-INNER JOIN 
-    central."documentoPersonal" d ON p.per_id=d.per_id 
-INNER JOIN 
-    central.etnia et ON p.etn_id=et.etn_id 
-LEFT JOIN 
-    central.direccion dir ON p.per_id=dir.per_id 
-LEFT JOIN 
-    central.parroquia prr ON p.lugarprocedencia_id=prr.prq_id 
-LEFT JOIN 
-    central."nacionalidadPersona" np ON p.per_id=np.per_id 
-LEFT JOIN 
-    central.nacionalidad nac ON np.nac_id=nac.nac_id 
-INNER JOIN 
-    central.genero gn ON p.gen_id=gn.gen_id 
-INNER JOIN 
-    central."estadoCivil" estc ON p.eci_id=estc.eci_id 
-LEFT JOIN 
-    central.sexo ON sexo.sex_id = p.sex_id 
-WHERE 
-    p."per_primerApellido" || p."per_segundoApellido" ILIKE '%' || $1 || '%';
-
-        `;
-        
-        
-        let resultado = await transaccioncentral.query(consulta, [apellido]);
-
-        if (resultado.rows.length > 0) {
-           
-            return res.json({
-                success: true,
-                data: resultado.rows
-            });
-        } 
-    } catch (err) {
-        console.error("Error al obtener los datos:", err);
-        res.json({
-            success: false,
-            mensaje: "Error al procesar la solicitud."
-        });
-    } finally {
-        await transaccioncentral.release();
-    }
-});
 /*  completos */
 router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
-    const completo = req.params.completo;  
+    const completo = req.params.completo.trim();  
     const poolcentralizada = new Pool(db);
     const transaccioncentral = await poolcentralizada.connect();
 
@@ -213,7 +31,7 @@ router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
         let consulta = `
         SELECT 
             p.per_id, 
-            REPLACE(p.per_nombres, ' ', '') as per_nombres, 
+            p.per_nombres, 
             p."per_primerApellido",
             p."per_segundoApellido", 
             p.per_email, 
@@ -258,7 +76,10 @@ router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
         LEFT JOIN 
             central.sexo ON sexo.sex_id = p.sex_id 
         WHERE 
-            REPLACE(p.per_nombres, ' ', '') || p."per_primerApellido" || p."per_segundoApellido" ILIKE '%' || $1 || '%';
+            CONCAT(p.per_nombres, ' ', p."per_primerApellido", ' ', p."per_segundoApellido") ILIKE '%' || $1 || '%' 
+            OR p.per_nombres ILIKE '%' || $1 || '%' 
+            OR p."per_primerApellido" ILIKE '%' || $1 || '%' 
+            OR p."per_segundoApellido" ILIKE '%' || $1 || '%';
         `;
 
         let resultado = await transaccioncentral.query(consulta, [completo]);
@@ -292,52 +113,90 @@ router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
     let resultadoFinal = {};
 
     try {
-       
+        // Verificar si existe imagen asociada a la cédula
         let personaImagen = await transaccioncentral.query(
-            `SELECT imagen FROM central.personaimagen p
+            `SELECT p.imagen, p.per_id 
+             FROM central.personaimagen p
              JOIN central."documentoPersonal" u ON p.per_id = u.per_id
              WHERE u.pid_valor = $1`, [cedula]
         );
 
-       
+    
         if (personaImagen.rows.length > 0 && personaImagen.rows[0].imagen) {
             resultadoFinal = {
                 success: true,
                 imagen: personaImagen.rows[0].imagen
             };
         } else {
-           
+        
             const reportebase64 = await new Promise(resolve => {
                 consumodinardapESPOCH_DIGERIC_Biometrico1(cedula, valor => resolve(valor));
             });
-            
+
             if (reportebase64) {
                 try {
-                    
-                    const query = `
-                        UPDATE central.personaimagen SET imagen = $1
-                        WHERE per_id = (SELECT per_id FROM central."documentoPersonal" WHERE pid_valor = $2)
-                    `;
-                    const datosImagen = await transaccioncentral.query(query, [reportebase64, cedula]);
-                    
-                    if (datosImagen.rowCount > 0) {
-                        resultadoFinal = {
-                            success: true,
-                            imagen: reportebase64
-                        };
-                        console.log("Imagen actualizada correctamente.");
+                    if (personaImagen.rows.length > 0) {
+                        const query = `
+                            UPDATE central.personaimagen 
+                            SET imagen = $1
+                            WHERE per_id = $2
+                        `;
+                        const datosImagen = await transaccioncentral.query(query, [reportebase64, personaImagen.rows[0].per_id]);
+
+                        if (datosImagen.rowCount > 0) {
+                            resultadoFinal = {
+                                success: true,
+                                imagen: reportebase64
+                            };
+                            console.log("Imagen actualizada correctamente.");
+                        } else {
+                            console.log("No se pudo actualizar la imagen.");
+                            resultadoFinal = {
+                                success: false,
+                                mensaje: "No se pudo actualizar la imagen en la base de datos."
+                            };
+                        }
                     } else {
-                        console.log("No se pudo actualizar la imagen.");
-                        resultadoFinal = {
-                            success: false,
-                            mensaje: "No se pudo actualizar la imagen en la base de datos."
-                        };
+                        const perIdQuery = `
+                            SELECT per_id 
+                            FROM central."documentoPersonal" 
+                            WHERE pid_valor = $1
+                        `;
+                        const perIdResult = await transaccioncentral.query(perIdQuery, [cedula]);
+
+                        if (perIdResult.rows.length > 0) {
+                            const perId = perIdResult.rows[0].per_id;
+
+                            const insertQuery = `
+                                INSERT INTO central.personaimagen (per_id, imagen) 
+                                VALUES ($1, $2)
+                            `;
+                            const datosInsertados = await transaccioncentral.query(insertQuery, [perId, reportebase64]);
+
+                            if (datosInsertados.rowCount > 0) {
+                                resultadoFinal = {
+                                    success: true,
+                                    imagen: reportebase64
+                                };
+                                console.log("Imagen insertada correctamente.");
+                            } else {
+                                resultadoFinal = {
+                                    success: false,
+                                    mensaje: "No se pudo insertar la imagen en la base de datos."
+                                };
+                            }
+                        } else {
+                            resultadoFinal = {
+                                success: false,
+                                mensaje: "No se encontró el per_id asociado a la cédula."
+                            };
+                        }
                     }
                 } catch (error) {
-                    console.error("Error durante la actualización de la imagen:", error);
+                    console.error("Error durante la actualización o inserción de la imagen:", error);
                     resultadoFinal = {
                         success: false,
-                        mensaje: "Error al actualizar la imagen en la base de datos."
+                        mensaje: "Error al actualizar o insertar la imagen en la base de datos."
                     };
                 }
             } else {
@@ -359,6 +218,7 @@ router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
         await transaccioncentral.release();
     }
 });
+
 async function consumodinardapESPOCH_DIGERIC_Biometrico1(cedula, callback) {
     try {
         let listado = [];
@@ -390,6 +250,7 @@ async function consumodinardapESPOCH_DIGERIC_Biometrico1(cedula, callback) {
                         for (campos of listacamposbiometricos) {
                             listado.push(campos);
                         }
+                       
                         var foto= '';
                         for (atr of listado) {
                             if (atr.campo == "foto") {
@@ -758,319 +619,6 @@ async function consumoESPOCHMSP2(cedula, callback) {
         callback(null);
     }
 }
-
-/* SRI GENERAL */
-router.get('/consumodinardapSRIGenral2/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
-    var sriGeneral = [];
-    var success = false;
-    try {
-        var datosSRIGeneral = await new Promise(resolve => { consumodinardapSRIGeneral2(cedula, (valor) => { resolve(valor); }) });
-        if (datosSRIGeneral != null) {
-            sriGeneral = datosSRIGeneral;
-            success = true;
-        }
-        return res.json({
-            success: success,
-            listado: sriGeneral
-        });
-    } catch (err) {
-        console.log('Error: ' + err)
-        return res.json({
-            success: false
-        });
-    }
-});
-async function consumodinardapSRIGeneral2(cedula, callback) {
-    var url = UrlAcademico.urlwsdl;
-    var Username = urlAcademico.usuariodinardap;
-    var Password = urlAcademico.clavedinardap;
-    var codigopaquete = urlAcademico.codigoSRIGeneral;
-    var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedula };
-    soap.createClient(url, async function (err, client) {
-        if (!err) {
-            client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
-            client.getFichaGeneral(args, async function (err, result) {
-                if (err) {
-                    console.log('Error consumo servicio: ' + err)
-                    callback(null);
-                }
-                else {
-                    var listado = []
-                    var jsonString = JSON.stringify(result.return);
-                    var objjson = JSON.parse(jsonString);
-                    let listacamposdinardapsrigeneral = objjson.instituciones[0].datosPrincipales.registros;
-               
-                    for (campos of listacamposdinardapsrigeneral) {
-                        listado.push(campos);
-                    }
-                    var numeroRuc = ''
-                    var personaSociedad = ''
-                    var razonSocial = ''
-                    var nombreFantasiaComercial = ''
-                    var actividadEconomicaPrincipal = ''
-                    for (atr of listado) {
-                         if (atr.campo == "numeroRuc") {
-                            numeroRuc = atr.valor;
-                        }
-                        if (atr.campo == "personaSociedad") {
-                            personaSociedad = atr.valor;
-                        }
-                        if (atr.campo == "razonSocial") {
-                            razonSocial = atr.valor;
-                        }
-                        if (atr.campo == "nombreFantasiaComercial") {
-                            nombreFantasiaComercial = atr.valor;
-                        }
-                        if (atr.campo == "actividadEconomicaPrincipal") {
-                            actividadEconomicaPrincipal = atr.valor;
-                        }
-                    }
-                    var sriGeneral = {
-                        numeroRuc: numeroRuc,
-                        personaSociedad: personaSociedad,
-                        razonSocial: razonSocial,
-                        nombreFantasiaComercial: nombreFantasiaComercial,
-                        actividadEconomicaPrincipal: actividadEconomicaPrincipal
-                    }
-                    callback(sriGeneral)
-                
-            }
-            });
-        } else {
-            callback(null, null);
-            console.log('Error consumo dinardap: ' + err)
-        }
-
-    }
-    );
-}
-
-async function consumodinardapSRICompleto2(cedula, callback) {
-    try {
-        let listado = [];
-        let listadevuelta = [];
-        var url = UrlAcademico.urlwsdl2;
-        var Username = urlAcademico.usuariodinardap;
-        var Password = urlAcademico.clavedinardap;
-        var codigopaquete = urlAcademico.codigoSRICompleto;
-        const args =
-        {
-            parametros: {
-                parametro: [
-                    { nombre: "codigoPaquete", valor: codigopaquete },
-                    { nombre: "identificacion", valor: cedula },
-                    { nombre: "fuenteDatos", valor: " "}
-                ]
-            }
-        };
-        soap.createClient(url, async function (err, client) {
-            if (!err) {
-                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
-                client.consultar(args, async function (err, result) {
-                    if (err) {
-                        console.log('Error: ' + err)
-                        callback(null);
-                    }
-                    else {
-                        var jsonString = JSON.stringify(result.paquete);
-                        var objjson = JSON.parse(jsonString);
-                        let listacampossricompletos = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
-                        for (campos of listacampossricompletos) {
-                            listado.push(campos);
-                        }
-                        var telefonoDomicilio = ''
-                        var direccionLarga = ''
-                        for (atr of listado) {
-                            if (atr.campo == "telefonoDomicilio") {
-                                telefonoDomicilio = atr.valor;
-                            }
-                            if (atr.campo == "direccionLarga") {
-                                direccionLarga = atr.valor
-                            }
-                        }
-                        var sriCompleto = {
-                            telefonoDomicilio: telefonoDomicilio,
-                            direccionLarga: direccionLarga
-                        }
-                        
-                        callback(sriCompleto)
-                    }
-                });
-            } else {
-                callback(null);
-                console.log('Error consumo dinardap: ' + err)
-            }
-
-        }
-        );
-    } catch (err) {
-        console.error('Fallo en la Consulta', err.stack)
-        return callback(null);
-    }
-}
-async function consumodinardapSRIContactos2(cedula, callback) {
-    try {
-        let listado = [];
-        let listadevuelta = [];
-        var url = UrlAcademico.urlwsdl2;
-        var Username = urlAcademico.usuariodinardap;
-        var Password = urlAcademico.clavedinardap;
-        var codigopaquete = urlAcademico.codigoSRIContactos;
-        const args =
-        {
-            parametros: {
-                parametro: [
-                    { nombre: "codigoPaquete", valor: codigopaquete },
-                    { nombre: "identificacion", valor: cedula }
-                ]
-            }
-        };
-        soap.createClient(url, async function (err, client) {
-            if (!err) {
-                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
-                client.consultar(args, async function (err, result) {
-                    if (err) {
-                        console.log('Error: ' + err)
-                        callback(null);
-                    }
-                    else {
-                        var jsonString = JSON.stringify(result.paquete);
-                        var objjson = JSON.parse(jsonString);
-                        let listacampossricontactos = objjson.entidades.entidad[6].filas.fila[0].columnas.columna;
-                        
-                        for (campos of listacampossricontactos) {
-                            listado.push(campos);
-                        }
-                        var telefonoDomicilioR = ''
-                        for (atr of listado) {
-                            if (atr.campo == "telefonoDomicilioMedCon") {
-                                telefonoDomicilioR = atr.valor;
-                            }
-                        }
-                        var sriContactos = {
-                            telefonoDomicilioR: telefonoDomicilioR
-                        }
-                        callback(sriContactos)
-                    }
-                });
-            } else {
-                callback(null);
-                console.log('Error consumo dinardap: ' + err)
-            }
-
-        }
-        );
-    } catch (err) {
-        console.error('Fallo en la Consulta', err.stack)
-        return callback(null);
-    }
-}
-async function consumodinardapSRIDatos2(cedula, callback) {
-    try {
-        let listado = [];
-        let listadevuelta = [];
-        var url = UrlAcademico.urlwsdl2;
-        var Username = urlAcademico.usuariodinardap;
-        var Password = urlAcademico.clavedinardap;
-        var codigopaquete = urlAcademico.codigoSRIDatos;
-        const args =
-        {
-            parametros: {
-                parametro: [
-                    { nombre: "codigoPaquete", valor: codigopaquete },
-                    { nombre: "identificacion", valor: cedula }
-                ]
-            }
-        };
-        soap.createClient(url, async function (err, client) {
-            if (!err) {
-                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
-                client.consultar(args, async function (err, result) {
-                    if (err) {
-                        console.log('Error: ' + err)
-                        callback(null);
-                    }
-                    else {
-                        var jsonString = JSON.stringify(result.paquete);
-                        var objjson = JSON.parse(jsonString);
-                        let listacampossridatos = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
-                        for (campos of listacampossridatos) {
-                            listado.push(campos);
-                        }
-                        var idRepresentanteLegal = ''
-                        for (atr of listado) {
-                           
-                            if (atr.campo == "idRepreLegal") {
-                                idRepresentanteLegal = atr.valor;
-                            }
-                        }
-                        
-                        var sriDatos = {
-                            idRepresentanteLegal: idRepresentanteLegal
-                        }
-                        callback(sriDatos)
-                    }
-                });
-            } else {
-                callback(null);
-                console.log('Error consumo dinardap: ' + err)
-            }
-
-        }
-        );
-    } catch (err) {
-        console.error('Fallo en la Consulta', err.stack)
-        return callback(null);
-    }
-}
-/* Servicios de SRI unidos  */
-router.get('/consumodinardapSRICompletoDatosContactos2/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
-    var sriGeneral = [];
-    var sriCompleto = [];
-    var sriContactos = [];
-    var sriDatos = [];
-    var success = false;
-    
-    
-    try {
-        var datosSRIGeneral = await new Promise(resolve => { 
-            consumodinardapSRIGeneral2(cedula, (valor) => { resolve(valor); }) 
-        });
-        var datosSRICompleto = await new Promise(resolve => { 
-            consumodinardapSRICompleto2(cedula, (valor) => { resolve(valor); }) 
-        });
-        var datosSRIContactos = await new Promise(resolve => { 
-            consumodinardapSRIContactos2(cedula, (valor) => { resolve(valor); }) 
-        });
-        var datosSRIDatos = await new Promise(resolve => { 
-            consumodinardapSRIDatos2(cedula, (valor) => { resolve(valor); }) 
-        });
-        
-        if (datosSRIGeneral || datosSRICompleto || datosSRIContactos || datosSRIDatos) {
-            
-            sriGeneral = datosSRIGeneral || [];
-            sriCompleto = datosSRICompleto || [];
-            sriContactos = datosSRIContactos || [];
-            sriDatos = datosSRIDatos || [];
-            success = true;
-        }
-        
-        return res.json({
-            success: success,
-            general: sriGeneral,
-            completo: sriCompleto,
-            contactos: sriContactos,
-            datos: sriDatos
-        });
-    } catch (err) {
-        console.log('Error: ' + err);
-        return res.json({
-            success: false
-        });
-    }
-});
 /* Servicios unidos pero la infromacion esta separada */
 router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
@@ -1132,6 +680,231 @@ router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
         });
     }
 });
+async function consumodinardapSRIGeneral2(cedula, callback) {
+    var url = UrlAcademico.urlwsdl;
+    var Username = urlAcademico.usuariodinardap;
+    var Password = urlAcademico.clavedinardap;
+    var codigopaquete = urlAcademico.codigoSRIGeneral;
+    var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedula };
+
+    soap.createClient(url, async function (err, client) {
+        if (err) {
+            console.log('Error creando cliente SOAP: ' + err);
+            callback(null);
+            return;
+        }
+        client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+        client.getFichaGeneral(args, async function (err, result) {
+            if (err || !result || !result.return) {
+                console.log('Error en el consumo del servicio o respuesta inválida: ' + err);
+                callback(null);
+                return;
+            }
+
+            try {
+                var listado = [];
+                var jsonString = JSON.stringify(result.return);
+                var objjson = JSON.parse(jsonString);
+                let listacamposdinardapsrigeneral = objjson?.instituciones?.[0]?.datosPrincipales?.registros || [];
+
+                for (const campos of listacamposdinardapsrigeneral) {
+                    listado.push(campos);
+                }
+
+                var sriGeneral = {
+                    numeroRuc: listado.find(atr => atr.campo === "numeroRuc")?.valor || '',
+                    personaSociedad: listado.find(atr => atr.campo === "personaSociedad")?.valor || '',
+                    razonSocial: listado.find(atr => atr.campo === "razonSocial")?.valor || '',
+                    nombreFantasiaComercial: listado.find(atr => atr.campo === "nombreFantasiaComercial")?.valor || '',
+                    actividadEconomicaPrincipal: listado.find(atr => atr.campo === "actividadEconomicaPrincipal")?.valor || ''
+                };
+
+                callback(sriGeneral);
+            } catch (parseError) {
+                console.log('Error procesando la respuesta: ' + parseError);
+                callback(null);
+            }
+        });
+    });
+}
+
+async function consumodinardapSRICompleto2(cedula, callback) {
+    try {
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoSRICompleto;
+
+        const args = {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula },
+                    { nombre: "fuenteDatos", valor: " " }
+                ]
+            }
+        };
+
+        soap.createClient(url, async function (err, client) {
+            if (err) {
+                console.log('Error creando cliente SOAP: ' + err);
+                callback(null);
+                return;
+            }
+            client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+            client.consultar(args, async function (err, result) {
+                if (err || !result || !result.paquete) {
+                    console.log('Error en el consumo del servicio o respuesta inválida: ' + err);
+                    callback(null);
+                    return;
+                }
+
+                try {
+                    var listado = [];
+                    var jsonString = JSON.stringify(result.paquete);
+                    var objjson = JSON.parse(jsonString);
+                    let listacampossricompletos = objjson?.entidades?.entidad?.[0]?.filas?.fila?.[0]?.columnas?.columna || [];
+
+                    for (const campos of listacampossricompletos) {
+                        listado.push(campos);
+                    }
+
+                    var sriCompleto = {
+                        telefonoDomicilio: listado.find(atr => atr.campo === "telefonoDomicilio")?.valor || '',
+                        direccionLarga: listado.find(atr => atr.campo === "direccionLarga")?.valor || ''
+                    };
+
+                    callback(sriCompleto);
+                } catch (parseError) {
+                    console.log('Error procesando la respuesta: ' + parseError);
+                    callback(null);
+                }
+            });
+        });
+    } catch (generalError) {
+        console.error('Fallo en la consulta: ' + generalError.stack);
+        callback(null);
+    }
+}
+async function consumodinardapSRIContactos2(cedula, callback) {
+    try {
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoSRIContactos;
+
+        const args = {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula }
+                ]
+            }
+        };
+
+        soap.createClient(url, async function (err, client) {
+            if (err) {
+                console.log('Error creando cliente SOAP: ' + err);
+                callback(null);
+                return;
+            }
+            client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+            client.consultar(args, async function (err, result) {
+                if (err || !result || !result.paquete) {
+                    console.log('Error en el consumo del servicio o respuesta inválida: ' + err);
+                    callback(null);
+                    return;
+                }
+
+                try {
+                    var listado = [];
+                    var jsonString = JSON.stringify(result.paquete);
+                    var objjson = JSON.parse(jsonString);
+
+                    let entidad = objjson?.entidades?.entidad?.[6];
+                    if (!entidad || !entidad.filas || !entidad.filas.fila) {
+                        console.log('La entidad o sus filas están vacías o son nulas');
+                        callback(null);
+                        return;
+                    }
+
+                    let listacampossricontactos = entidad.filas.fila[0]?.columnas?.columna || [];
+                    for (const campos of listacampossricontactos) {
+                        listado.push(campos);
+                    }
+
+                    var sriContactos = {
+                        telefonoDomicilioR: listado.find(atr => atr.campo === "telefonoDomicilioMedCon")?.valor || ''
+                    };
+
+                    callback(sriContactos);
+                } catch (parseError) {
+                    console.log('Error procesando la respuesta: ' + parseError);
+                    callback(null);
+                }
+            });
+        });
+    } catch (generalError) {
+        console.error('Fallo en la consulta: ' + generalError.stack);
+        callback(null);
+    }
+}
+async function consumodinardapSRIDatos2(cedula, callback) {
+    try {
+        var url = UrlAcademico.urlwsdl2;
+        var Username = urlAcademico.usuariodinardap;
+        var Password = urlAcademico.clavedinardap;
+        var codigopaquete = urlAcademico.codigoSRIDatos;
+
+        const args = {
+            parametros: {
+                parametro: [
+                    { nombre: "codigoPaquete", valor: codigopaquete },
+                    { nombre: "identificacion", valor: cedula }
+                ]
+            }
+        };
+
+        soap.createClient(url, async function (err, client) {
+            if (err) {
+                console.log('Error creando cliente SOAP: ' + err);
+                callback(null);
+                return;
+            }
+            client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+            client.consultar(args, async function (err, result) {
+                if (err || !result || !result.paquete) {
+                    console.log('Error en el consumo del servicio o respuesta inválida: ' + err);
+                    callback(null);
+                    return;
+                }
+
+                try {
+                    var listado = [];
+                    var jsonString = JSON.stringify(result.paquete);
+                    var objjson = JSON.parse(jsonString);
+                    let listacampossridatos = objjson?.entidades?.entidad?.[0]?.filas?.fila?.[0]?.columnas?.columna || [];
+
+                    for (const campos of listacampossridatos) {
+                        listado.push(campos);
+                    }
+
+                    var sriDatos = {
+                        idRepresentanteLegal: listado.find(atr => atr.campo === "idRepreLegal")?.valor || ''
+                    };
+
+                    callback(sriDatos);
+                } catch (parseError) {
+                    console.log('Error procesando la respuesta: ' + parseError);
+                    callback(null);
+                }
+            });
+        });
+    } catch (generalError) {
+        console.error('Fallo en la consulta: ' + generalError.stack);
+        callback(null);
+    }
+}
 /* DATOS DEMOGRAFICOS */
 router.get('/cosnumodinardapDatosDomiciliarios2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
@@ -1198,9 +971,6 @@ async function consumodinardapESPOCH_DIGERIC_DEMOGRAFICO2(cedula, callback) {
                             if (atr.campo == "fechaNacimiento") {
                                 fechaNacimiento = atr.valor;
                             }
-                            if (atr.campo == "genero") {
-                                genero = atr.valor;
-                            }
                             if (atr.campo == "lugarNacimiento") {
                                 lugarNacimiento = atr.valor;
                             }
@@ -1217,7 +987,6 @@ async function consumodinardapESPOCH_DIGERIC_DEMOGRAFICO2(cedula, callback) {
                         }
                         var datosDemograficos = {
                             Nombre: nombre,
-                            Genero: genero,
                             FechaNacimiento: fechaNacimiento,
                             LugarNacimiento: lugarNacimiento,
                             Nacionalida: nacionalidad,
@@ -1242,35 +1011,42 @@ async function consumodinardapESPOCH_DIGERIC_DEMOGRAFICO2(cedula, callback) {
 /* Impedimentos en MDT defectuoso */
 router.get('/cosnumodinardapDatosMDT2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
-    var datosMDT = [];
-    var success = false;
+    let datosMDT = [];
+    let success = false;
+
     try {
-        var datosmdt = await new Promise(resolve => { consumodinardapESPOCH_MDT_Impedimentos2(cedula, (valor) => { resolve(valor); }) });
-        if (datosmdt != null) {
+        const datosmdt = await new Promise(resolve => {
+            consumodinardapESPOCH_MDT_Impedimentos2(cedula, (valor) => {
+                resolve(valor);
+            });
+        });
+
+        if (datosmdt) {
             datosMDT = datosmdt;
             success = true;
         }
+
         return res.json({
-            success: success,
+            success,
             listado: datosMDT
         });
     } catch (err) {
-        console.log('Error: ' + err)
+        console.error('Error en el servicio:', err);
         return res.json({
-            success: false
+            success: false,
+            mensaje: 'Error interno en el servidor'
         });
     }
 });
 async function consumodinardapESPOCH_MDT_Impedimentos2(cedula, callback) {
     try {
-        let listado = [];
-        let listadevuelta = [];
-        var url = UrlAcademico.urlwsdl2;
-        var Username = urlAcademico.usuariodinardap;
-        var Password = urlAcademico.clavedinardap;
-        var codigopaquete = urlAcademico.ESPOCH_MDT_Impedimentos;
-        const args =
-        {
+        const listado = [];
+        const url = UrlAcademico.urlwsdl2;
+        const Username = urlAcademico.usuariodinardap;
+        const Password = urlAcademico.clavedinardap;
+        const codigopaquete = urlAcademico.ESPOCH_MDT_Impedimentos;
+
+        const args = {
             parametros: {
                 parametro: [
                     { nombre: "codigoPaquete", valor: codigopaquete },
@@ -1278,80 +1054,51 @@ async function consumodinardapESPOCH_MDT_Impedimentos2(cedula, callback) {
                 ]
             }
         };
-        soap.createClient(url, async function (err, client) {
-            if (!err) {
-                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
-                client.consultar(args, async function (err, result) {
-                    if (err) {
-                        console.log('Error: ' + err)
-                        callback(null);
-                    }
-                    else {
-                        var jsonString = JSON.stringify(result.paquete);
-                        var objjson = JSON.parse(jsonString);
-                        let listacamposdatosMDT = objjson.entidades.entidad[1].filas.fila[0].columnas.columna
-                        for (campos of listacamposdatosMDT) {
-                            listado.push(campos);
-                        }
-                        
-                        var Impedimento = ''
-                        var fechaImpedimento = ''
-                        var tipoImpedimento =''
-                        for (atr of listado) {
-                           
-                            if (atr.campo == "Impedimento") {
-                                Impedimento = atr.valor;
-                            }
-                            if (atr.campo == "fechaImpedimento") {
-                                fechaImpedimento = atr.valor;
-                            }
-                            if (atr.campo == "tipoImpedimento") {
-                                tipoImpedimento = atr.valor;
-                            }
-                        }
-                        
-                        var datosMDT = {
-                            Impedimento: Impedimento,
-                            fechaImpedimento: fechaImpedimento,
-                            tipoImpedimento: tipoImpedimento,
-                        }
-                        callback(datosMDT)
-                    }
-                });
-            } else {
-                callback(null);
-                console.log('Error consumo dinardap: ' + err)
+
+        soap.createClient(url, async (err, client) => {
+            if (err) {
+                console.error('Error al crear cliente SOAP:', err);
+                return callback(null);
             }
 
-        }
-        );
+            client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
+            client.consultar(args, async (err, result) => {
+                if (err) {
+                    console.error('Error en consulta SOAP:', err);
+                    return callback(null);
+                }
+
+                try {
+                    const jsonString = JSON.stringify(result.paquete);
+                    const objjson = JSON.parse(jsonString);
+                    const listacamposdatosMDT = objjson?.entidades?.entidad?.[1]?.filas?.fila?.[0]?.columnas?.columna;
+
+                    if (!listacamposdatosMDT) {
+                        console.error('Estructura de respuesta inválida o vacía');
+                        return callback(null);
+                    }
+
+                    for (const campos of listacamposdatosMDT) {
+                        listado.push(campos);
+                    }
+
+                    const datosMDT = {
+                        fechaImpedimento: listado.find(atr => atr.campo === "fechaImpedimento")?.valor || '',
+                        tipoImpedimento: listado.find(atr => atr.campo === "tipoImpedimento")?.valor || ''
+                    };
+
+                    return callback(datosMDT);
+                } catch (error) {
+                    console.error('Error procesando datos del servicio:', error);
+                    return callback(null);
+                }
+            });
+        });
     } catch (err) {
-        console.error('Fallo en la Consulta', err.stack)
+        console.error('Error general en consumoDinardap:', err.stack);
         return callback(null);
     }
 }
-/* minesterio de eduacaion codigo de refrendacion */
-router.get('/cosnumodinardapminEducaion2/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
-    var espochMineduDatos = [];
-    var success = false;
-    try {
-        var datosespoch = await new Promise(resolve => { serviciodinardapminEducacion2(cedula, (err, valor) => { resolve(valor); }) });
-        if (datosespoch != null) {
-            espochMineduDatos = datosespoch;
-            success = true;
-        }
-        return res.json({
-            success: success,
-            listado: espochMineduDatos
-        });
-    } catch (err) {
-        console.log('Error: ' + err)
-        return res.json({
-            success: false
-        });
-    }
-});
 async function serviciodinardapminEducacion2(cedulapersona, callback) {
     let listado = [];
     try {
@@ -1398,28 +1145,6 @@ async function serviciodinardapminEducacion2(cedulapersona, callback) {
         return callback(null);
     }
 }
-/* consumo de Servicio estudiantes */
-router.get('/cosnumodinardapESPOCHMINEDUCEstudiantes2/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
-    var espochMineduDatosEstudiante = [];
-    var success = false;
-    try {
-        var datosespochmineduEstudiantes = await new Promise(resolve => { consumodinardapESPOCHMINEDUCEstudiantes2(cedula, (valor) => { resolve(valor); }) });
-        if (datosespochmineduEstudiantes != null) {
-            espochMineduDatosEstudiante = datosespochmineduEstudiantes;
-            success = true;
-        }
-        return res.json({
-            success: success,
-            listado: espochMineduDatosEstudiante
-        });
-    } catch (err) {
-        console.log('Error: ' + err)
-        return res.json({
-            success: false
-        });
-    }
-});
 async function consumodinardapESPOCHMINEDUCEstudiantes2(cedula, callback) {
     try {
         let listado = [];
@@ -1503,171 +1228,89 @@ async function consumodinardapESPOCHMINEDUCEstudiantes2(cedula, callback) {
 /* consumo completo de estudiantes */
 router.get('/consumodinardapESPOCHMINEDUCCompleto2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
-    var success = true;
-    var provinciaInstitucion = '';
-    var cantonInstitucion = '';
-    var parroquiaInstitucion = '';
-    var amieInstitucion ='';
-    var sostenimiento = '';
-    var institucion = '';
-    var titulo = '';
-    var especialidad = '';
-    var fechaGrado ='';
-    var codigorefrendacion = ''; 
-    
-    try {
-        var datosespochminedu = await new Promise(resolve => { consumodinardapESPOCHMINEDUC2(cedula, (valor) => { resolve(valor); }) });
-        var datosespochmineduEstudiantes = await new Promise(resolve => { consumodinardapESPOCHMINEDUCEstudiantes2(cedula, (valor) => { resolve(valor); }) });
-        var registroministerio = await new Promise(resolve => { serviciodinardapminEducacion2(cedula, (err, valor) => { resolve(valor); }) });
-        if ( registroministerio || datosespochminedu || datosespochmineduEstudiantes ) {
-            codigorefrendacion = registroministerio.codigorefrendacion;
-            institucion = datosespochminedu.institucion;
-            titulo = datosespochminedu.titulo;
-            especialidad = datosespochminedu.especialidad;
-            fechaGrado = datosespochminedu.fechaGrado;
-            provinciaInstitucion = datosespochmineduEstudiantes.provinciaInstitucion;
-            cantonInstitucion = datosespochmineduEstudiantes.cantonInstitucion;
-            parroquiaInstitucion = datosespochmineduEstudiantes.parroquiaInstitucion;
-            amieInstitucion = datosespochmineduEstudiantes.amieInstitucion;
-            sostenimiento = datosespochmineduEstudiantes.sostenimiento;
-           
-        }
-  
-        return res.json({
-            success: success,
-            codigorefrendacion: codigorefrendacion,
-            institucion: institucion,
-            titulo: titulo,
-            especialidad: especialidad,
-            fechaGrado: fechaGrado,
-            provinciaInstitucion: provinciaInstitucion,
-            cantonInstitucion: cantonInstitucion,
-            parroquiaInstitucion: parroquiaInstitucion,
-            amieInstitucion: amieInstitucion,
-            sostenimiento: sostenimiento
+    let success = true;
 
-        });
-    } catch (err) {
-        console.log('Error: ' + err);
-        return res.json({
-            success: false
-        });
-    }
-});
-/* consumo servicio antiguo */
-router.patch('/actualizacionESPOCHMINEDU2/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
-    let reportebase64 = '';
-    const poolcentralizada = new Pool(db);
-    const transaccioncentral = await poolcentralizada.connect();
-    let resultadosFinales = [];
-    try {
-        var personapersonalizado = await new Promise((resolve, reject) => {
-            actualizarV2.obtenerPersonaPersonalizado(cedula, (err, valor) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(valor);
-                }
-            });
-        }).catch(err => {
-            console.error("Error al obtener la información por medio de la cedula :", err);
-        });
-        console.log(personapersonalizado)
-        if (personapersonalizado.length > 0) {
-            for (const persona of personapersonalizado) {
-                const cedula = persona.pid_valor;
-                console.log(cedula)
-                let success = false;
-                try {
-                    const datosespochminedu = await new Promise(resolve => { consumodinardapESPOCHMINEDUC2(cedula, (valor) => { resolve(valor); }) });
-                    const datosespochmineduEstudiantes = await new Promise(resolve => { consumodinardapESPOCHMINEDUCEstudiantes2(cedula, (valor) => { resolve(valor); }) });
-                    const registroministerio = await new Promise(resolve => { serviciodinardapminEducacion2(cedula, (err, valor) => { resolve(valor); }) });
-                   
-                    console.log(registroministerio)
-                    if(persona.ifo_registro === registroministerio.codigorefrendacion){
-                        const  codigorefrendacion = persona.inf_registro;
-                        const actualizacionCiudad = datosespochmineduEstudiantes.cantonInstitucion;
-                        console.log(actualizacionCiudad)
-                        try {
-                            const query =`
-                            UPDATE central.institucion s  
-                            SET ciu_id = (
-                            SELECT c.ciu_id
-                            FROM   central.ciudad c
-                            WHERE c.ciu_nombre = $1
-                            )   
-                            FROM central."instruccionFormal" i
-                            WHERE i.ifo_registro = $2;
-                            `;
-                            const datos = await transaccioncentral.query(query, [actualizacionCiudad, codigorefrendacion ]);
+    // Variables con valores predeterminados
+    let provinciaInstitucion = '';
+    let cantonInstitucion = '';
+    let parroquiaInstitucion = '';
+    let amieInstitucion = '';
+    let sostenimiento = '';
+    let institucion = '';
+    let titulo = '';
+    let especialidad = '';
+    let fechaGrado = '';
+    let codigorefrendacion = '';
 
-                            if (datos.rowCount > 0) {
-                                console.log("Ciudad actualizada correctamente.");
-                                resultadosFinales.push({
-                                    success: true,
-                                    cedula,
-                                    actualizacionCiudad
-                                });
-                            } else {
-                                console.log("No se pudo actualizar la Ciudad.");
-                            }
-                        } catch (error) {
-                            console.error("Error durante la actualización:", error);
-                        }
-                    }
-                
-                } catch (err) {
-                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
-                    resultadosFinales.push({
-                        success: false,
-                        BaseDatos: persona,
-                        mensaje: 'Error al procesar los datos para la cédula proporcionada.'
-                    });
-                }
-            }
-            return res.json({
-                success: true,
-                listado: resultadosFinales
+    try {
+        const datosespochminedu = await new Promise(resolve => {
+            consumodinardapESPOCHMINEDUC2(cedula, (valor) => {
+                resolve(valor || null);
             });
+        });
+
+        const datosespochmineduEstudiantes = await new Promise(resolve => {
+            consumodinardapESPOCHMINEDUCEstudiantes2(cedula, (valor) => {
+                resolve(valor || null);
+            });
+        });
+
+        const registroministerio = await new Promise(resolve => {
+            serviciodinardapminEducacion2(cedula, (err, valor) => {
+                resolve(valor || null);
+            });
+        });
+
+        // Verificar y asignar datos
+        if (registroministerio) {
+            codigorefrendacion = registroministerio.codigorefrendacion || 'No disponible';
         } else {
-            return res.json({
-                success: false,
-                listado: []
-            });
+            console.log('No se obtuvo información de serviciodinardapminEducacion2');
         }
-        } catch (err) {
-        console.error('Error: ', err);
+
+        if (datosespochminedu) {
+            institucion = datosespochminedu.institucion || 'No disponible';
+            titulo = datosespochminedu.titulo || 'No disponible';
+            especialidad = datosespochminedu.especialidad || 'No disponible';
+            fechaGrado = datosespochminedu.fechaGrado || 'No disponible';
+        } else {
+            console.log('No se obtuvo información de consumodinardapESPOCHMINEDUC2');
+        }
+
+        if (datosespochmineduEstudiantes) {
+            provinciaInstitucion = datosespochmineduEstudiantes.provinciaInstitucion || 'No disponible';
+            cantonInstitucion = datosespochmineduEstudiantes.cantonInstitucion || 'No disponible';
+            parroquiaInstitucion = datosespochmineduEstudiantes.parroquiaInstitucion || 'No disponible';
+            amieInstitucion = datosespochmineduEstudiantes.amieInstitucion || 'No disponible';
+            sostenimiento = datosespochmineduEstudiantes.sostenimiento || 'No disponible';
+        } else {
+            console.log('No se obtuvo información de consumodinardapESPOCHMINEDUCEstudiantes2');
+        }
+
+        return res.json({
+            success: true,
+            codigorefrendacion,
+            institucion,
+            titulo,
+            especialidad,
+            fechaGrado,
+            provinciaInstitucion,
+            cantonInstitucion,
+            parroquiaInstitucion,
+            amieInstitucion,
+            sostenimiento
+        });
+
+    } catch (err) {
+        console.error('Error general en la ruta:', err.message);
         return res.json({
             success: false,
-            mensaje: 'Error al procesar la solicitud.'
-        });
-    } finally {
-        await transaccioncentral.release();
-    }
-});  
-/* MINEDU */
-router.get('/cosnumodinardapESPOCHMINEDUC2/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
-    var espochMineduDatos = [];
-    var success = false;
-    try {
-        var datosespochminedu = await new Promise(resolve => { consumodinardapESPOCHMINEDUC2(cedula, (valor) => { resolve(valor); }) });
-        if (datosespochminedu != null) {
-            espochMineduDatos = datosespochminedu;
-            success = true;
-        }
-        return res.json({
-            success: success,
-            listado: espochMineduDatos
-        });
-    } catch (err) {
-        console.log('Error: ' + err)
-        return res.json({
-            success: false
+            error: 'Error al procesar la solicitud. Consulte los logs para más detalles.'
         });
     }
 });
+
+ 
 async function consumodinardapESPOCHMINEDUC2(cedula, callback) {
     try {
         let listado = [];

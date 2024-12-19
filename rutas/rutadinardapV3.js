@@ -121,14 +121,14 @@ router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
              WHERE u.pid_valor = $1`, [cedula]
         );
 
-    
+        // Si existe imagen, retornarla
         if (personaImagen.rows.length > 0 && personaImagen.rows[0].imagen) {
             resultadoFinal = {
                 success: true,
                 imagen: personaImagen.rows[0].imagen
             };
         } else {
-        
+            // Obtener la nueva imagen desde el servicio externo
             const reportebase64 = await new Promise(resolve => {
                 consumodinardapESPOCH_DIGERIC_Biometrico1(cedula, valor => resolve(valor));
             });
@@ -136,6 +136,7 @@ router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
             if (reportebase64) {
                 try {
                     if (personaImagen.rows.length > 0) {
+                        // Actualizar si ya existe registro para la persona
                         const query = `
                             UPDATE central.personaimagen 
                             SET imagen = $1
@@ -157,6 +158,7 @@ router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
                             };
                         }
                     } else {
+                        // Insertar si no existe registro para la persona
                         const perIdQuery = `
                             SELECT per_id 
                             FROM central."documentoPersonal" 
@@ -285,15 +287,29 @@ router.patch('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
     let resumen = { actualizados: 0, sinCambios: 0, fallidos: 0 };
 
     try {
-        const personadiscapacitada = await new Promise((resolve, reject) => {
-            actualizarV2.discapacidad(cedula, (err, valor) => {
-                if (err) reject(err);
-                else resolve(valor);
-            });
-        });
+        const query = `
+            SELECT 
+                u."per_id", 
+                u."pid_valor", 
+                c."cdi_numero", 
+                c."org_id", 
+                o."org_nombre", 
+                c."cdi_habilitado", 
+                d."dis_valor", 
+                t."tdi_nombre", 
+                d."dis_grado"
+            FROM central."documentoPersonal" u
+            JOIN central."carnetDiscapacidad" c ON u.per_id = c.per_id 
+            JOIN central."discapacidad" d ON c.cdi_id = d.cdi_id 
+            JOIN central."organizacion" o ON c.org_id = o.org_id 
+            JOIN central."tipoDiscapacidad" t ON d.tdi_id = t.tdi_id 
+            JOIN central."medidaDiscapacidad" m ON d.mdi_id = m.mdi_id
+            WHERE u.tdi_id = 1 AND u.pid_valor = $1
+        `;
+        const personadiscapacitada = await transaccioncentral.query(query, [cedula]);
 
-        if (personadiscapacitada.length > 0) {
-            for (const persona of personadiscapacitada) {
+        if (personadiscapacitada.rows.length > 0) {
+            for (const persona of personadiscapacitada.rows) {
                 const { pid_valor, dis_valor, dis_grado, tdi_nombre, cdi_numero, per_id } = persona;
                 let reportePersona = { cedula: pid_valor, cambios: [], estado: 'sinCambios' };
 
@@ -301,7 +317,7 @@ router.patch('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
                     const espochMSP = await new Promise(resolve => {
                         consumoESPOCHMSP2(pid_valor, valor => resolve(valor));
                     });
-                
+
                     if (dis_valor !== espochMSP.porcentajeDiscapacidad) {
                         const query = `
                             UPDATE central.discapacidad d 
@@ -367,7 +383,6 @@ router.patch('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
                 resultadosFinales.push(reportePersona);
             }
 
-     
             resumen.actualizados = resultadosFinales.filter(r => r.estado === 'actualizado').length;
             resumen.sinCambios = resultadosFinales.filter(r => r.estado === 'sinCambios').length;
             resumen.fallidos = resultadosFinales.filter(r => r.estado === 'fallido').length;
@@ -384,40 +399,43 @@ router.patch('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
     }
 });
 
+
 /* Actualizar toda la base de datos la discapacidad */
 router.patch('/actualizacionDiscapacidadTodo2', async (req, res) => {
-    let reportebase64 = '';
     const poolcentralizada = new Pool(db);
     const transaccioncentral = await poolcentralizada.connect();
     let resultadosFinales = [];
 
     try {
-        const personadiscapacitada = await new Promise((resolve, reject) => {
-            actualizarV2.obtenerdiscapacidad((err, valor) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(valor);
-                }
-            });
-        });
+        const queryPersonasDiscapacitadas = `
+            SELECT u."per_id", u."pid_valor", c."cdi_numero", c."org_id", o."org_nombre", c."cdi_habilitado", 
+                   d."dis_valor", t."tdi_nombre", d."dis_grado"
+            FROM central."documentoPersonal" u
+            JOIN central."carnetDiscapacidad" c ON u.per_id = c.per_id
+            JOIN central."discapacidad" d ON c.cdi_id = d.cdi_id
+            JOIN central."organizacion" o ON c.org_id = o.org_id
+            JOIN central."tipoDiscapacidad" t ON d.tdi_id = t.tdi_id
+            JOIN central."medidaDiscapacidad" m ON d.mdi_id = m.mdi_id
+            WHERE u.tdi_id = 1
+        `;
 
+        const { rows: personadiscapacitada } = await transaccioncentral.query(queryPersonasDiscapacitadas);
+console.log(personadiscapacitada)
         if (personadiscapacitada.length > 0) {
-            
             for (const persona of personadiscapacitada) {
                 const cedula = persona.pid_valor;
-                let success = false;
 
                 try {
                     const espochMSP = await new Promise(resolve => {
                         consumoESPOCHMSP2(cedula, valor => resolve(valor));
                     });
-                    if(persona.dis_valor != espochMSP.porcentajeDiscapacidad){
+
+                    if (persona.dis_valor !== espochMSP.porcentajeDiscapacidad) {
                         const carnet = persona.cdi_numero;
                         const nuevoPorcentajeDiscapacidad = espochMSP.porcentajeDiscapacidad;
 
                         try {
-                            const query =`
+                            const query = `
                                 UPDATE central.discapacidad d 
                                 SET dis_valor = $1 
                                 FROM central."carnetDiscapacidad" c 
@@ -427,107 +445,17 @@ router.patch('/actualizacionDiscapacidadTodo2', async (req, res) => {
                             const datosdiscapacidad = await transaccioncentral.query(query, [nuevoPorcentajeDiscapacidad, carnet]);
 
                             if (datosdiscapacidad.rowCount > 0) {
-                                console.log("Porcentaje de discapacidad actualizado correctamente.");
                                 resultadosFinales.push({
                                     success: true,
                                     carnet,
                                     nuevoPorcentajeDiscapacidad
                                 });
-                            } else {
-                                console.log("No se pudo actualizar el porcentaje de discapacidad.");
-                            }
-                        } catch (error) {
-                            console.error("Error durante la actualización:", error);
-                        }
-                    }
-                    if (persona.dis_grado != espochMSP.gradoDiscapacidad) {
-                        const nuevoGradoDiscapacidad = espochMSP.gradoDiscapacidad;
-                        const carnet = persona.cdi_numero;
-                        try {
-                            const query = `
-                             UPDATE central.discapacidad d
-                             SET dis_grado = $1 
-                             FROM central."carnetDiscapacidad" c
-                             WHERE d.cdi_id = c.cdi_id
-                              AND c.cdi_numero = $2
-                            `;
-                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoGradoDiscapacidad, carnet]);
-
-                            if (datosdiscapacidad.rowCount > 0) {
-                                console.log("Grado de discapacidad actualizado correctamente.");
-                                resultadosFinales.push({
-                                    success: true,
-                                    carnet,
-                                    nuevoGradoDiscapacidad
-                                });
-                            } else {
-                                console.log("No se pudo actualizar el grado de discapacidad.");
-                            }
-                        } catch (error) {
-                            console.error("Error durante la actualización:", error);
-                        }
-                    }
-                    
-                    if (persona.tdi_nombre != espochMSP.tipoDiscapacidadPredomina) {
-                        const nuevoTipoDiscapacidad = espochMSP.tipoDiscapacidadPredomina;
-                        const carnet = persona.cdi_numero;
-                        try {
-                            const query = `
-                            UPDATE central.discapacidad d
-                            SET tdi_id = (
-                            SELECT t.tdi_id 
-                            FROM central."tipoDiscapacidad" t 
-                            WHERE t.tdi_nombre = $1
-                            )   
-                            FROM central."carnetDiscapacidad" c
-                            WHERE d.cdi_id = c.cdi_id
-                            AND c.cdi_numero = $2;
-                            `;
-                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevoTipoDiscapacidad, carnet]);
-
-                            if (datosdiscapacidad.rowCount > 0) {
-                                console.log("Tipo de discapacidad actualizado correctamente.");
-                                resultadosFinales.push({
-                                    success: true,
-                                    carnet,
-                                    nuevoTipoDiscapacidad
-                                });
-                            } else {
-                                console.log("No se pudo actualizar el Tipo de Discapacidad.");
-                            }
-                        } catch (error) {
-                            console.error("Error durante la actualización:", error);
-                        }
-                    }
-                   console.log(espochMSP.codigoConadis)
-                    if (persona.cdi_numero != espochMSP.codigoConadis) {
-            
-                        const nuevocarntetDiscapacidad = espochMSP.codigoConadis;
-                        const personaID = persona.per_id;
-                        try {
-                            const query = `
-                            UPDATE central."carnetDiscapacidad" c
-                            SET cdi_numero = $1
-                            WHERE c.per_id = $2
-                            `;
-                            const datosdiscapacidad = await transaccioncentral.query(query, [nuevocarntetDiscapacidad, personaID]);
-
-                            if (datosdiscapacidad.rowCount > 0) {
-                                console.log("Carnet de discapacidad actualizado correctamente.");
-                                resultadosFinales.push({
-                                    success: true,
-                                    personaID,
-                                    nuevocarntetDiscapacidad
-                                });
-                            } else {
-                                console.log("No se pudo actualizar el Carnet de Discapacidad.");
                             }
                         } catch (error) {
                             console.error("Error durante la actualización:", error);
                         }
                     }
                 } catch (err) {
-                    console.log('Error con cedula: ' + cedula + ', Error: ' + err);
                     resultadosFinales.push({
                         success: false,
                         BaseDatos: persona,
@@ -555,6 +483,7 @@ router.patch('/actualizacionDiscapacidadTodo2', async (req, res) => {
         await transaccioncentral.release();
     }
 });
+
 async function consumoESPOCHMSP2(cedula, callback) {
     try {
         const listado = [];
@@ -1389,7 +1318,6 @@ async function consumodinardapESPOCHMINEDUC2(cedula, callback) {
 async function consumodinardapESPOCH_Senescyt895(cedula, callback) {
     try {
         let listado = [];
-        let listadevuelta = [];
         var url = UrlAcademico.urlwsdl2;
         var Username = urlAcademico.usuariodinardap;
         var Password = urlAcademico.clavedinardap;
@@ -1407,99 +1335,51 @@ async function consumodinardapESPOCH_Senescyt895(cedula, callback) {
                 client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
                 client.consultar(args, async function (err, result) {
                     if (err) {
-                        console.log('Error: ' + err);
+                        console.error('Error al consumir el servicio: ', err);
+                        callback(null);
+                    } else if (!result?.paquete?.entidades?.entidad?.[0]?.filas?.fila?.[0]?.columnas?.columna) {
+                        console.warn('Sin datos del servicio para la cédula proporcionada.');
                         callback(null);
                     } else {
-                        var jsonString = JSON.stringify(result.paquete);
-                        var objjson = JSON.parse(jsonString);
-                        let listacampossenecyt = objjson.entidades.entidad[0].filas.fila[0].columnas.columna;
-                        for (campos of listacampossenecyt) {
-                            listado.push(campos);
-                        }
-                        var fechaGrado = '';
-                        var fechaRegistro = '';
-                        var ies = '';
-                        var nivel = '';
-                        var nombreTitulo = '';
-                        var numeroIdentificacion = '';
-                        var numeroRegistro = '';
-                        var tipoExtranjeroColegio = '';
-                        var tipoTitulo = '';
-                        for (atr of listado) {
-                            if (atr.campo == "fechaGrado") {
-                                fechaGrado = atr.valor;
-                            }
-                            if (atr.campo == "fechaRegistro") {
-                                fechaRegistro = atr.valor;
-                            }
-                            if (atr.campo == "ies") {
-                                ies = atr.valor;
-                            }
-                            if (atr.campo == "nivel") {
-                                nivel = atr.valor;
-                            }
-                            if (atr.campo == "nombreTitulo") {
-                                nombreTitulo = atr.valor;
-                            }
-                            if (atr.campo == "numeroIdentificacion") {
-                                numeroIdentificacion = atr.valor;
-                            }
-                            if (atr.campo == "numeroRegistro") {
-                                numeroRegistro = atr.valor;
-                            }
-                            if (atr.campo == "tipoExtranjeroColegio") {
-                                tipoExtranjeroColegio = atr.valor;
-                            }
-                            if (atr.campo == "tipoTitulo") {
-                                tipoTitulo = atr.valor;
-                            }
-
-                        }
-                        var datosSenecyt = {
-                            Fecha_De_Grado: fechaGrado,
-                            Fecha_Registro: fechaRegistro,
-                            IES: ies,
-                            Nivel: nivel,
-                            Nombre_Titulo: nombreTitulo, 
-                            Numero_Identificacion: numeroIdentificacion,
-                            NumeroRegistro: numeroRegistro,
-                            TipoExtranjeroColegio: tipoExtranjeroColegio,
-                            TipoTitulo: tipoTitulo
-                        };
-                        callback(datosSenecyt); 
+                        let listacampossenecyt = result.paquete.entidades.entidad[0].filas.fila[0].columnas.columna;
+                        let datosSenecyt = listacampossenecyt.reduce((datos, atr) => {
+                            datos[atr.campo] = atr.valor;
+                            return datos;
+                        }, {});
+                        callback(datosSenecyt);
                     }
                 });
             } else {
+                console.error('Error al crear el cliente SOAP:', err);
                 callback(null);
-                console.log('Error consumo de los datos Demográficos: ' + err);
             }
         });
     } catch (err) {
-        console.error('Fallo en la Consulta', err.stack);
-        return callback(null);
+        console.error('Fallo en la consulta:', err.stack);
+        callback(null);
     }
 }
+
 router.get('/cosnumodinardapDatosSenecyt2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
-    var datosSenecyt= [];
-    var success = false;
     try {
-        var datossenecyt = await new Promise(resolve => { consumodinardapESPOCH_Senescyt895(cedula, (valor) => { resolve(valor); }) });
-        if (datossenecyt != null) {
-            datosSenecyt = datossenecyt
-            success = true;
-        }
-        return res.json({
+        const datosSenecyt = await new Promise(resolve => 
+            consumodinardapESPOCH_Senescyt895(cedula, resolve)
+        );
+        const success = datosSenecyt != null;
+        res.json({
             success: success,
-            listado: datosSenecyt
+            listado: success ? datosSenecyt : [],
         });
     } catch (err) {
-        console.log('Error: ' + err)
-        return res.json({
-            success: false
+        console.error('Error en el endpoint:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Ocurrió un error en el servidor.'
         });
     }
 });
+
 /*   DATOS CNE*/
 router.get('/cosnumodinardapDatosCNE2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
@@ -1522,109 +1402,7 @@ router.get('/cosnumodinardapDatosCNE2/:cedula', async (req, res) => {
         });
     }
 });
-router.get('/cosnumodinardapservici899/:cedula', async (req, res) => {
-    const cedula = req.params.cedula;
-    var datosRegistro= [];
-    var success = false;
-    try {
-        var datosregistro = await new Promise(resolve => { serviciodinardap899(cedula, (valor) => { resolve(valor); }) });
-        
-        if (datosregistro != null) {
-            datosRegistro = datosregistro
-            success = true;
-        }
-        return res.json({
-            success: success,
-            listado: datosRegistro
-        });
-    } catch (err) {
-        console.log('Error: ' + err)
-        return res.json({
-            success: false
-        });
-    }
-});
 
-/* servicio 899 */
-async function serviciodinardap899(cedulapersona, callback) {
-    let listado = [];
-    try {
-        let registroministerio = {};
-        var cedula = "";
-        var nombre = "";
-        var institucion = "";
-        var titulo = "";
-        var especialidad = "";
-        var numeroRefrendacion = 1;
-        var codigorefrendacion = 1;
-        var fechagrado = 1;
-        var url = urlAcademico.urlwsdl;
-        var Username = urlAcademico.usuariodinardap;
-        var Password = urlAcademico.clavedinardap;
-        var codigopaquete = urlAcademico.codigoPaqMinEducacion;
-        var args = { codigoPaquete: codigopaquete, numeroIdentificacion: cedulapersona };
-        soap.createClient(url, async function (err, client) {
-            if (!err) {
-                client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
-                client.getFichaGeneral(args, async function (err, result) {
-                    if (err) {
-                        console.log('Error servicio: ' + codigopaquete + err)
-                        return callback(null);
-                    }
-                    else {
-                        var jsonString = JSON.stringify(result.return);
-                        var objjson = JSON.parse(jsonString);
-                        let listaregistrosdinardap = objjson.instituciones[0].datosPrincipales.registros;
-                        
-                        for (registro of listaregistrosdinardap) {
-                            if (registro.campo == 'cedula') {
-                                cedula = registro.valor;
-                            }
-                            if (registro.campo == 'nombre') {
-                                nombre = registro.valor;
-                            }
-                            if (registro.campo == 'institucion') {
-                                institucion = registro.valor;
-                            }
-                            if (registro.campo == 'titulo') {
-                                titulo = registro.valor;
-                            }
-                            if (registro.campo == 'espcialidad') {
-                                especialidad = registro.valor;
-                            }
-                            if (registro.campo == 'numeroRefrendacion')
-                            if (registro.campo == 'codigoRefrendacion') {
-                                codigorefrendacion = registro.valor;
-                            }
-                            if (registro.campo == 'fechaGrado') {
-                                fechagrado = registro.valor;
-                            }
-                        }
-                        registroministerio = {
-                            cedula: cedula,
-                            nombre: nombre,
-                            institucion: institucion,
-                            titulo: titulo,
-                            especialidad: especialidad,
-                            codigorefrendacion: codigorefrendacion,
-                            fechagrado: fechagrado,
-                            nivel: 2
-                        }
-                        listado.push(registroministerio)
-                    }
-                    return callback(listado)
-                });
-            } else {
-                return callback(null);
-                console.log('Error consumo dinardap' + err)
-            }
-        });
-    } catch (err) {
-        console.error('Fallo en la Consulta', err.stack)
-        return callback(null);
-    }
-    console.log(listado)
-}
 async function consumodinardapESPOCH_CNE2(cedula, callback) {
     try {
         let listado = [];

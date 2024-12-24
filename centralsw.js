@@ -10,7 +10,7 @@ const acceso = require('./rutas/rutacceso');
 const dinardap = require('./rutas/rutadinardap');
 const dinardapV2 = require('./rutas/rutaDinardapV2');
 const dinardapV3 = require('./rutas/rutadinardapV3');
-const actualizarV2 = require('./rutas/rutaActualizarV2');
+
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
@@ -52,7 +52,7 @@ app.use('/rutaCentral', central);
 app.use('/rutadinardap', dinardap);
 app.use('/rutaDinardapV2', dinardapV2);
 app.use('/rutadinardapV3', dinardapV3);
-app.use('/rutaActualizarV2', actualizarV2 )
+
 
 
 ///app.use('/Seguridad', Seguridad);

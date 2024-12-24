@@ -19,8 +19,8 @@ const ExcelJS = require('exceljs');
 const bd = require("../config/baseMaster");
 var cron = require('node-cron');
 const { list } = require("pdfkit");
-const actualizarV2 = require('./../modelo/actualizarV2');
-/* Obtener Biometria (Imagen) */
+
+
 router.get('/ObtenerBiometria/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     const poolcentralizada = new Pool(db);
@@ -95,8 +95,7 @@ router.get('/ObtenerBiometria/:cedula', async (req, res) => {
         await transaccioncentral.release();
     }
 });
-/* consulta de informacion por medio del Nombre y Apellidos */
-/* Cedula */
+/* consulta de informacion por medio del Nombre y Apellidos */ 
 router.get('/ObtenerDatosPersonaCedula/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     const poolcentralizada = new Pool(db);
@@ -2567,4 +2566,4 @@ router.get('/consumodinardapESPOCHMINEDUCCompleto/:cedula', async (req, res) => 
         await transaccioncentral.release();
     }
 });  
-module.exports = router;
+module.exports = router; 

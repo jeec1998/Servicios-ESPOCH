@@ -19,7 +19,7 @@ const ExcelJS = require('exceljs');
 const bd = require("../config/baseMaster");
 var cron = require('node-cron');
 const { list } = require("pdfkit");
-const actualizarV2 = require('./../modelo/actualizarV2');
+
 /* consulta de informacion por medio del Nombre y Apellidos */
 /*  completos */
 router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {

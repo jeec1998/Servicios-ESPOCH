@@ -25,15 +25,15 @@ const { list } = require("pdfkit");
 router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
     const completo = req.params.completo
         .trim()
-        .replace(/\s+/g, ' '); // Reemplaza múltiples espacios por un único espacio
+        .replace(/\s+/g, ' '); 
     
-    const palabras = completo.split(' '); // Divide la entrada en palabras clave
+    const palabras = completo.split(' '); 
 
     const poolcentralizada = new Pool(db);
     const transaccioncentral = await poolcentralizada.connect();
 
     try {
-        // Construye dinámicamente las condiciones ILIKE
+        
         const condiciones = palabras
             .map((_, i) => `(p.per_nombres || ' ' || p."per_primerApellido" || ' ' || p."per_segundoApellido" ILIKE $${i + 1})`)
             .join(' AND ');
@@ -88,7 +88,7 @@ router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
             WHERE ${condiciones};
         `;
 
-        // Crea el array de parámetros para la consulta
+       
         const parametros = palabras.map(palabra => `%${palabra}%`);
 
         const resultado = await transaccioncentral.query(consulta, parametros);

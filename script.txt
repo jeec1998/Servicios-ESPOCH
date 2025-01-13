@@ -5,6 +5,10 @@ CREATE TABLE IF NOT EXISTS central.personaImagen (
     imagen TEXT
 );
 ************************************************************************
+//Creamos una columna dis_grado//
+ALTER TABLE central.discapacidad
+ADD COLUMN dis_grado character varying(256);
+************************************************************************
 //Tbla persona//
 creamos una una columna denominada per_grado
 ***********************************************************************

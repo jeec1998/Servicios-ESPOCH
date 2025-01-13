@@ -38,9 +38,10 @@ router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
             .map((_, i) => `(p.per_nombres || ' ' || p."per_primerApellido" || ' ' || p."per_segundoApellido" ILIKE $${i + 1})`)
             .join(' AND ');
 
-        const consulta = `
-            SELECT 
+            const consulta = `
+            SELECT DISTINCT ON (p.per_id)
                 p.per_id, 
+                d.pid_valor,
                 p.per_nombres, 
                 p."per_primerApellido",
                 p."per_segundoApellido", 
@@ -85,9 +86,9 @@ router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
                 central."estadoCivil" estc ON p.eci_id=estc.eci_id 
             LEFT JOIN 
                 central.sexo sexo ON sexo.sex_id = p.sex_id 
-            WHERE ${condiciones};
+            WHERE ${condiciones}
+            ORDER BY p.per_id, p.per_nombres;
         `;
-
        
         const parametros = palabras.map(palabra => `%${palabra}%`);
 
@@ -291,7 +292,7 @@ async function consumodinardapESPOCH_DIGERIC_Biometrico1(cedula, callback) {
     }
 }
 /* Actualizar la discapacidad por medio de la cedula  */
-router.patch('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
+router.get('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     const poolcentralizada = new Pool(db);
     const transaccioncentral = await poolcentralizada.connect();
@@ -413,7 +414,7 @@ router.patch('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
 
 
 /* Actualizar toda la base de datos la discapacidad */
-router.patch('/actualizacionDiscapacidadTodo2', async (req, res) => {
+router.get('/actualizacionDiscapacidadTodo2', async (req, res) => {
     const poolcentralizada = new Pool(db);
     const transaccioncentral = await poolcentralizada.connect();
     let resultadosFinales = [];
@@ -590,17 +591,17 @@ router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
             consumodinardapSRIDatos2(cedula, (valor) => { resolve(valor); }) 
         });
         if (datosSRIGeneral || datosSRICompleto || datosSRIContactos || datosSRIDatos) {
-            
-            telefonoDomicilio = datosSRICompleto.telefonoDomicilio ;
-            direccionLarga = datosSRICompleto.direccionLarga;
-            telefonoDomicilioR = datosSRIContactos.telefonoDomicilioR;
-            idRepresentanteLegal = datosSRIDatos.idRepresentanteLegal;
-            numeroRuc = datosSRIGeneral.numeroRuc;
-            personaSociedad = datosSRIGeneral.personaSociedad;
-            razonSocial = datosSRIGeneral.razonSocial;
-            nombreFantasiaComercial = datosSRIGeneral.nombreFantasiaComercial;
-            actividadEconomicaPrincipa = datosSRIGeneral.actividadEconomicaPrincipa;
+            telefonoDomicilio = datosSRICompleto?.telefonoDomicilio || ''; 
+            direccionLarga = datosSRICompleto?.direccionLarga || '';
+            telefonoDomicilioR = datosSRIContactos?.telefonoDomicilioR || '';
+            idRepresentanteLegal = datosSRIDatos?.idRepresentanteLegal || '';
+            numeroRuc = datosSRIGeneral?.numeroRuc || '';
+            personaSociedad = datosSRIGeneral?.personaSociedad || '';
+            razonSocial = datosSRIGeneral?.razonSocial || '';
+            nombreFantasiaComercial = datosSRIGeneral?.nombreFantasiaComercial || '';
+            actividadEconomicaPrincipa = datosSRIGeneral?.actividadEconomicaPrincipa || '';
         }
+        
         
         return res.json({
             success: success,

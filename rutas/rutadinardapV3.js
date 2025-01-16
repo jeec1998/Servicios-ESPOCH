@@ -116,8 +116,6 @@ router.get('/ObtenerDatosPersonaCompleto2/:completo', async (req, res) => {
     }
 });
 
-
-
 /* Obtener Biometria (Imagen) */
 router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
@@ -126,22 +124,19 @@ router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
     let resultadoFinal = {};
 
     try {
-        // Verificar si existe imagen asociada a la cédula
         let personaImagen = await transaccioncentral.query(
             `SELECT p.imagen, p.per_id 
              FROM central.personaimagen p
              JOIN central."documentoPersonal" u ON p.per_id = u.per_id
              WHERE u.pid_valor = $1`, [cedula]
         );
-
-        // Si existe imagen, retornarla
         if (personaImagen.rows.length > 0 && personaImagen.rows[0].imagen) {
             resultadoFinal = {
                 success: true,
                 imagen: personaImagen.rows[0].imagen
             };
         } else {
-            // Obtener la nueva imagen desde el servicio externo
+           
             const reportebase64 = await new Promise(resolve => {
                 consumodinardapESPOCH_DIGERIC_Biometrico1(cedula, valor => resolve(valor));
             });
@@ -149,7 +144,6 @@ router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
             if (reportebase64) {
                 try {
                     if (personaImagen.rows.length > 0) {
-                        // Actualizar si ya existe registro para la persona
                         const query = `
                             UPDATE central.personaimagen 
                             SET imagen = $1
@@ -171,7 +165,7 @@ router.get('/ObtenerBiometria2/:cedula', async (req, res) => {
                             };
                         }
                     } else {
-                        // Insertar si no existe registro para la persona
+                        
                         const perIdQuery = `
                             SELECT per_id 
                             FROM central."documentoPersonal" 
@@ -291,6 +285,7 @@ async function consumodinardapESPOCH_DIGERIC_Biometrico1(cedula, callback) {
         return callback(null);
     }
 }
+
 /* Actualizar la discapacidad por medio de la cedula  */
 router.get('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
@@ -411,7 +406,6 @@ router.get('/actualizacionDiscapacidad2/:cedula', async (req, res) => {
         await transaccioncentral.release();
     }
 });
-
 
 /* Actualizar toda la base de datos la discapacidad */
 router.get('/actualizacionDiscapacidadTodo2', async (req, res) => {
@@ -561,6 +555,7 @@ async function consumoESPOCHMSP2(cedula, callback) {
         callback(null);
     }
 }
+
 /* Servicios unidos pero la infromacion esta separada */
 router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
@@ -574,9 +569,7 @@ router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
     var razonSocial = '';
     var nombreFantasiaComercial = '';
     var actividadEconomicaPrincipa = '';
-    var success = true;
-    
-    
+
     try {
         var datosSRIGeneral = await new Promise(resolve => { 
             consumodinardapSRIGeneral2(cedula, (valor) => { resolve(valor); }) 
@@ -590,6 +583,7 @@ router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
         var datosSRIDatos = await new Promise(resolve => { 
             consumodinardapSRIDatos2(cedula, (valor) => { resolve(valor); }) 
         });
+
         if (datosSRIGeneral || datosSRICompleto || datosSRIContactos || datosSRIDatos) {
             telefonoDomicilio = datosSRICompleto?.telefonoDomicilio || ''; 
             direccionLarga = datosSRICompleto?.direccionLarga || '';
@@ -601,10 +595,19 @@ router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
             nombreFantasiaComercial = datosSRIGeneral?.nombreFantasiaComercial || '';
             actividadEconomicaPrincipa = datosSRIGeneral?.actividadEconomicaPrincipa || '';
         }
+
         
-        
+        if (!telefonoDomicilio && !direccionLarga && !telefonoDomicilioR && !idRepresentanteLegal &&
+            !numeroRuc && !personaSociedad && !razonSocial && !nombreFantasiaComercial && 
+            !actividadEconomicaPrincipa) {
+            return res.json({
+                success: false,
+                message: 'No hay datos para esta cédula'
+            });
+        }
+
         return res.json({
-            success: success,
+            success: true,
             numeroRuc: numeroRuc,
             personaSociedad: personaSociedad,
             razonSocial: razonSocial,
@@ -618,10 +621,12 @@ router.get('/consumodinardapSRIGeneralCompleto2/:cedula', async (req, res) => {
     } catch (err) {
         console.log('Error: ' + err);
         return res.json({
-            success: false
+            success: false,
+            message: 'Ocurrió un error al procesar la solicitud'
         });
     }
 });
+
 async function consumodinardapSRIGeneral2(cedula, callback) {
     var url = UrlAcademico.urlwsdl;
     var Username = urlAcademico.usuariodinardap;
@@ -847,8 +852,9 @@ async function consumodinardapSRIDatos2(cedula, callback) {
         callback(null);
     }
 }
+
 /* DATOS DEMOGRAFICOS */
-router.get('/cosnumodinardapDatosDomiciliarios2/:cedula', async (req, res) => {
+router.get('/consumodinardapDatosDomiciliarios2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     var datosDemograficos = [];
     var success = false;
@@ -950,8 +956,9 @@ async function consumodinardapESPOCH_DIGERIC_DEMOGRAFICO2(cedula, callback) {
         return callback(null);
     }
 }
+
 /* Impedimentos en MDT defectuoso */
-router.get('/cosnumodinardapDatosMDT2/:cedula', async (req, res) => {
+router.get('/consumodinardapDatosMDT2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     let datosMDT = [];
     let success = false;
@@ -1096,8 +1103,7 @@ async function consumodinardapESPOCHMINEDUCEstudiantes2(cedula, callback) {
         var Password = urlAcademico.clavedinardap;
         var codigopaquete = urlAcademico.codigoESPOCHMINEDUCEstudiantes;
         var tipo = urlAcademico.tipoCedulaEstudiante;
-        const args =
-        {
+        const args = {
             parametros: {
                 parametro: [
                     { nombre: "codigoPaquete", valor: codigopaquete },
@@ -1106,73 +1112,83 @@ async function consumodinardapESPOCHMINEDUCEstudiantes2(cedula, callback) {
                 ]
             }
         };
-        
+
         soap.createClient(url, async function (err, client) {
             if (!err) {
                 client.setSecurity(new soap.BasicAuthSecurity(Username, Password));
                 client.consultar(args, async function (err, result) {
                     if (err) {
-                        console.log('Error: ' + err)
+                        console.log('Error: ' + err);
                         callback(null);
-                    }
-                    else {
-                        var jsonString = JSON.stringify(result.paquete);
-                        var objjson = JSON.parse(jsonString);
-                        let listacamposEspochMineducEstudainte = objjson.entidades.entidad[0].filas.fila[0].columnas.columna
-                        for (campos of listacamposEspochMineducEstudainte) {
-                            listado.push(campos);
-                        }
-                        var provinciaInstitucion = ''
-                        var cantonInstitucion = ''
-                        var parroquiaInstitucion = ''
-                        var amieInstitucion =''
-                        var sostenimiento = ''
-                        for (atr of listado) {
-                            if (atr.campo == "provinciaInstitucion") {
-                                provinciaInstitucion = atr.valor;
+                    } else {
+                        try {
+                            var jsonString = JSON.stringify(result.paquete);
+                            var objjson = JSON.parse(jsonString);
+                            const filas = objjson.entidades.entidad[0].filas.fila;
+
+                            if (!filas || filas.length === 0) {
+                                console.log('La fila es null o no contiene datos');
+                                return callback(null);
                             }
-                            if (atr.campo == "cantonInstitucion") {
-                                cantonInstitucion = atr.valor;
+
+                            let listacamposEspochMineducEstudainte = filas[0].columnas.columna;
+                            for (const campos of listacamposEspochMineducEstudainte) {
+                                listado.push(campos);
                             }
-                            if (atr.campo == "parroquiaInstitucion") {
-                                parroquiaInstitucion = atr.valor;
+
+                            var provinciaInstitucion = '';
+                            var cantonInstitucion = '';
+                            var parroquiaInstitucion = '';
+                            var amieInstitucion = '';
+                            var sostenimiento = '';
+                            for (const atr of listado) {
+                                if (atr.campo === "provinciaInstitucion") {
+                                    provinciaInstitucion = atr.valor;
+                                }
+                                if (atr.campo === "cantonInstitucion") {
+                                    cantonInstitucion = atr.valor;
+                                }
+                                if (atr.campo === "parroquiaInstitucion") {
+                                    parroquiaInstitucion = atr.valor;
+                                }
+                                if (atr.campo === "amieInstitucion") {
+                                    amieInstitucion = atr.valor;
+                                }
+                                if (atr.campo === "sostenimiento") {
+                                    sostenimiento = atr.valor;
+                                }
                             }
-                            if (atr.campo == "amieInstitucion") {
-                                amieInstitucion = atr.valor;
-                            } 
-                            if (atr.campo == "sostenimiento") {
-                                sostenimiento = atr.valor;
-                            }                                
+
+                            var espochMineduDatosEstudiante = {
+                                provinciaInstitucion: provinciaInstitucion,
+                                cantonInstitucion: cantonInstitucion,
+                                parroquiaInstitucion: parroquiaInstitucion,
+                                amieInstitucion: amieInstitucion,
+                                sostenimiento: sostenimiento
+                            };
+                            callback(espochMineduDatosEstudiante);
+                        } catch (error) {
+                            console.error('Error procesando los datos del paquete:', error.message);
+                            callback(null);
                         }
-                        
-                        var espochMineduDatosEstudiante = {
-                            provinciaInstitucion: provinciaInstitucion,
-                            cantonInstitucion: cantonInstitucion,
-                            parroquiaInstitucion: parroquiaInstitucion,
-                            amieInstitucion: amieInstitucion,
-                            sostenimiento: sostenimiento
-                        }
-                        callback(espochMineduDatosEstudiante)
                     }
                 });
             } else {
+                console.log('Error consumo : ' + err);
                 callback(null);
-                console.log('Error consumo : ' + err)
             }
-
-        }
-        );
+        });
     } catch (err) {
-        console.error('Fallo en la Consulta', err.stack)
+        console.error('Fallo en la Consulta', err.stack);
         return callback(null);
     }
 }
+
+
 /* consumo completo de estudiantes */
 router.get('/consumodinardapESPOCHMINEDUCCompleto2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     let success = true;
-
-    // Variables con valores predeterminados
     let provinciaInstitucion = '';
     let cantonInstitucion = '';
     let parroquiaInstitucion = '';
@@ -1203,7 +1219,13 @@ router.get('/consumodinardapESPOCHMINEDUCCompleto2/:cedula', async (req, res) =>
             });
         });
 
-        // Verificar y asignar datos
+        if (!datosespochminedu && !datosespochmineduEstudiantes && !registroministerio) {
+            return res.json({
+                success: false,
+                message: 'No existen datos para esta cédula.'
+            });
+        }
+
         if (registroministerio) {
             codigorefrendacion = registroministerio.codigorefrendacion || 'No disponible';
         } else {
@@ -1252,7 +1274,7 @@ router.get('/consumodinardapESPOCHMINEDUCCompleto2/:cedula', async (req, res) =>
     }
 });
 
- 
+
 async function consumodinardapESPOCHMINEDUC2(cedula, callback) {
     try {
         let listado = [];
@@ -1327,6 +1349,7 @@ async function consumodinardapESPOCHMINEDUC2(cedula, callback) {
         return callback(null);
     }
 }
+
 /* servicio 895 */
 async function consumodinardapESPOCH_Senescyt895(cedula, callback) {
     try {
@@ -1373,7 +1396,7 @@ async function consumodinardapESPOCH_Senescyt895(cedula, callback) {
     }
 }
 
-router.get('/cosnumodinardapDatosSenecyt2/:cedula', async (req, res) => {
+router.get('/consumodinardapDatosSenecyt2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     try {
         const datosSenecyt = await new Promise(resolve => 
@@ -1394,7 +1417,7 @@ router.get('/cosnumodinardapDatosSenecyt2/:cedula', async (req, res) => {
 });
 
 /*   DATOS CNE*/
-router.get('/cosnumodinardapDatosCNE2/:cedula', async (req, res) => {
+router.get('/consumodinardapDatosCNE2/:cedula', async (req, res) => {
     const cedula = req.params.cedula;
     var datosCne= [];
     var success = false;
